@@ -1,14 +1,17 @@
-import type {Metadata} from "next";
+import type { Metadata } from "next";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
+import Navigation from "@/components/Static/Navigation";
+import Footer from "@/components/Static/Footer";
 
 export const metadata: Metadata = {
   title: "OctoSearch - GitHub Discovery Tool",
   description: "Discover GitHub profiles, organizations, and repositories easily",
+  icons: {
+    icon: "/logo.webp",
+  },
 };
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-gradient-to-b from-github-dark to-github-dark-secondary overflow-x-hidden">

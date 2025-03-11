@@ -20,7 +20,7 @@ OctoSearch is a modern web application that allows users to search and explore G
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/octosearch.git
+git clone https://github.com/Git-Logs/octosearch.git
 cd octosearch
 ```
 

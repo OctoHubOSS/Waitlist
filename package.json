@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "autoprefixer": "10.4.16",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.4.11",
     "next": "canary",
     "postcss": "8.4.31",
     "react": "18.2.0",
