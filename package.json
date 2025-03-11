@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "autoprefixer": "10.4.16",
+    "cheerio": "^1.0.0-rc.12",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.4.11",
     "next": "canary",
