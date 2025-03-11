@@ -176,7 +176,7 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="mx-auto">
       <motion.div
         initial="hidden"
         animate="visible"
@@ -185,19 +185,19 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
       >
         <motion.div
           variants={itemVariants}
-          className="card glow-effect border border-github-border overflow-hidden"
+          className="card glow-effect border border-github-border"
         >
-          <div className="h-12 bg-github-gradient" />
+          <div className="bg-github-gradient" />
 
           <div className="p-8">
             <div className="flex flex-col md:flex-row md:items-start gap-8">
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="relative flex h-32 w-32 shrink-0 overflow-hidden rounded-xl shadow-github border-2 border-github-border bg-github-dark-secondary -mt-16"
+                className="relative flex h-32 w-32 shrink-0 overflow-hidden rounded-xl shadow-github border-2 border-github-border bg-github-dark-secondary -mt-5"
               >
                 <img
                   alt={repository.owner.login}
-                  className="h-full w-full object-cover transition-all duration-300 hover:brightness-110"
+                  className="h-full w-full object-cover transition-all duration-300  hover:brightness-110"
                   src={repository.owner.avatar_url}
                 />
               </motion.div>
