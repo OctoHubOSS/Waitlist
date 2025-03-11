@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  color: #c9d1d9;
+  background-color: #0d1117;
+}
+
+body {
+  @apply bg-github-dark text-github-text;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md border border-github-border px-4 py-2 
+    text-sm font-medium shadow-sm transition-all hover:bg-github-accent hover:text-white 
+    focus:outline-none focus:ring-2 focus:ring-github-accent focus:ring-offset-2 focus:ring-offset-github-dark;
+  }
+  
+  .btn-primary {
+    @apply bg-github-accent text-white hover:bg-github-accent-hover border-transparent;
+  }
+  
+  .card {
+    @apply rounded-xl border border-github-border bg-github-dark-secondary p-5 transition-all;
+  }
+  
+  .card-hover {
+    @apply hover:shadow-md hover:border-github-link/40;
+  }
+  
+  .input {
+    @apply w-full rounded-md border border-github-border bg-github-dark px-3 py-2 text-github-text 
+    shadow-sm focus:border-github-link focus:outline-none focus:ring-1 focus:ring-github-link;
+  }
+  
+  .link {
+    @apply text-github-link hover:text-github-link-hover transition-colors;
+  }
+  
+  .section-title {
+    @apply text-xl font-semibold mb-5 flex items-center gap-2;
+  }
+  
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply bg-github-accent/20 text-github-accent border border-github-accent/20;
+  }
+  
+  .badge-secondary {
+    @apply bg-github-dark text-github-text-secondary border border-github-border;
+  }
+  
+  .divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-github-border to-transparent my-6;
+  }
+  
+  .glow-effect {
+    @apply relative;
+  }
+  
+  .glow-effect::after {
+    @apply content-[''] absolute inset-0 rounded-xl opacity-0 transition-opacity;
+    box-shadow: 0 0 15px 2px rgba(88, 166, 255, 0.3);
+  }
+  
+  .glow-effect:hover::after {
+    @apply opacity-100;
+  }
+}
