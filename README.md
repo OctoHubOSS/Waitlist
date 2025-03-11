@@ -14,6 +14,7 @@ OctoSearch is a modern web application that allows users to search and explore G
 - Next.js
 - TypeScript
 - Tailwind CSS
+- Framer Motion
 - GitHub REST API
 
 ## Installation
