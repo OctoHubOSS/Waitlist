@@ -9,7 +9,6 @@ export default function Home() {
         title="Discover the GitHub Universe" 
         description="Find developers, organizations, and repositories with OctoSearch's powerful discovery platform."
       />
-      <FeaturesSection />
       <TrendingSection />
     </div>
   );

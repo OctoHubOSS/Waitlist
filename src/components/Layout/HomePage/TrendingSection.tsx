@@ -3,21 +3,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { FaArrowRight } from "react-icons/fa";
 import RepositoryCard from "@/components/Cards/RepositoryCard";
-
-interface Repository {
-  id: number;
-  name: string;
-  description: string;
-  stars: number;
-  forks: number;
-  language: string;
-  owner: {
-    login: string;
-    avatar_url: string;
-  };
-  updatedAt: string;
-  url: string;
-}
+import { Repository } from "@/types/repos";
 
 export default function TrendingSection() {
   const [trendingRepos, setTrendingRepos] = useState<Repository[]>([]);
@@ -26,14 +12,22 @@ export default function TrendingSection() {
   useEffect(() => {
     async function fetchTrendingRepos() {
       try {
-        const response = await fetch("/api/trending");
+        const response = await fetch("/api/trending/repos");
+        
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
         
-        // Validate that the data is an array before setting state
+        // Validate that the data is an array or has the expected structure
         if (Array.isArray(data)) {
           setTrendingRepos(data);
+        } else if (data.repositories && Array.isArray(data.repositories)) {
+          // Adjust this according to the new API's response structure
+          setTrendingRepos(data.repositories);
         } else {
-          console.error("Expected an array of repositories but got:", typeof data);
+          console.error("Unexpected data format:", data);
           setTrendingRepos([]);
         }
       } catch (error) {
@@ -46,7 +40,7 @@ export default function TrendingSection() {
     fetchTrendingRepos();
   }, []);
 
-  // Framer Motion variants
+  // Framer Motion variants remain the same
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -79,6 +73,7 @@ export default function TrendingSection() {
     },
   };
 
+  // The rest of the component remains the same
   return (
     <section className="w-full mb-12 md:mb-16">
       <motion.div

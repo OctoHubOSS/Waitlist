@@ -1,30 +1,12 @@
 "use client";
 
 import React from "react";
-import { FaStar, FaCodeBranch, FaLock, FaGlobe, FaDatabase } from "react-icons/fa";
+import { FaStar, FaCodeBranch, FaLock, FaDatabase } from "react-icons/fa";
+import LanguageIcon from "@/components/Icons/Lang";
+import { RepoArray } from "@/types/repos";
 import { GoRepo } from "react-icons/go";
 
-interface RepositoryProps {
-  repo: {
-    id: number;
-    name: string;
-    owner?: { 
-      login: string;
-      avatar_url: string;
-    };
-    description: string;
-    language: string;
-    stars: number;
-    forks: number;
-    updatedAt: string;
-    url: string;
-    visibility?: "public" | "private";
-    topics?: string[];
-    size?: number;
-  };
-}
-
-function RepositoryCard({ repo }: RepositoryProps) {
+function RepositoryCard({ repo }: RepoArray) {
   // Format repo size to KB, MB or GB as appropriate
   const formatSize = (sizeInKB?: number) => {
     if (!sizeInKB) return null;
@@ -40,8 +22,7 @@ function RepositoryCard({ repo }: RepositoryProps) {
 
   return (
     <a
-      href={repo.url}
-      target="_blank"
+      href={'/repo/' + repo.repo}
       rel="noopener noreferrer"
       className="card card-hover glow-effect flex flex-col p-4 md:p-5 overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-github-accent/50 border border-github-border bg-github-dark-secondary rounded-lg"
     >
@@ -87,9 +68,14 @@ function RepositoryCard({ repo }: RepositoryProps) {
       )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-github-text-secondary mt-auto pt-2 border-t border-github-border/40">
-        <span className="badge badge-primary text-xs whitespace-nowrap px-2 py-0.5 rounded-full bg-github-accent/20 text-github-accent">
-          {repo.language || "No language"}
-        </span>
+        {repo.language && (
+          <div className="flex items-center gap-1.5">
+            <LanguageIcon language={repo.language} size="sm" className="-mr-2" />
+            <span className="text-xs whitespace-nowrap px-2 py-0.5">
+              {repo.language}
+            </span>
+          </div>
+        )}
 
         <div className="flex items-center gap-1.5">
           <FaStar className="h-3.5 w-3.5 text-yellow-500" />

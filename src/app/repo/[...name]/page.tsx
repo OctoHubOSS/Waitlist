@@ -3,36 +3,11 @@
 import { Suspense, useEffect, useState } from "react";
 import { FaStar, FaCodeBranch, FaEye, FaExclamationTriangle, FaLock, FaUnlock, FaBalanceScale, FaDatabase } from "react-icons/fa";
 import { GoRepo, GoGitBranch } from "react-icons/go";
+import { RepoPage } from "@/types/repos";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { use } from "react";
-
-export interface Repository {
-  name: string;
-  description: string;
-  html_url: string;
-  id: string;
-  stargazers_count: number;
-  forks_count: number;
-  watchers_count: number;
-  open_issues_count: number;
-  language?: string;
-  updated_at: string;
-  owner: {
-    login: string;
-    avatar_url: string;
-  };
-  archived: boolean;
-  license: {
-    name: string;
-  } | null;
-  size: number;
-  allow_forking: boolean;
-  is_template: boolean;
-  default_branch: string;
-  topics?: string[];
-  visibility?: string;
-}
+import LanguageIcon from "@/components/Icons/Lang";
 
 const RepositoryCardSkeleton = () => {
   return (
@@ -74,8 +49,9 @@ const RepositoryNotFound = () => {
   );
 };
 
-async function fetchRepositoryData(owner: string, repo: string): Promise<Repository> {
-  const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+// Updated to use our API route instead of GitHub API directly
+async function fetchRepositoryData(owner: string, repo: string): Promise<RepoPage> {
+  const response = await fetch(`/api/repo?owner=${owner}&repo=${repo}`);
 
   if (!response.ok) {
     throw new Error(`Repository not found: ${response.status}`);
@@ -97,7 +73,7 @@ const formatRepoSize = (sizeInKb: number): string => {
 
 function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
   const unwrappedParams = use(params);
-  const [repository, setRepository] = useState<Repository | null>(null);
+  const [repository, setRepository] = useState<RepoPage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -166,27 +142,6 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
     },
   };
 
-  const getLanguageColor = (language?: string) => {
-    switch (language) {
-      case "JavaScript":
-        return "#f1e05a";
-      case "TypeScript":
-        return "#3178c6";
-      case "Python":
-        return "#3572A5";
-      case "Java":
-        return "#b07219";
-      case "Ruby":
-        return "#701516";
-      case "Go":
-        return "#00ADD8";
-      case "C#":
-        return "#178600";
-      default:
-        return "#8e8e8e";
-    }
-  };
-
   return (
     <div className="mx-auto">
       <motion.div
@@ -241,16 +196,16 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
                   </div>
 
                   <motion.a
-              href={repository.html_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all flex items-center"
-                >
-           <GoRepo className="h-4 w-4 mr-2" />
-          View on GitHub
-             </motion.a>
+                    href={repository.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all flex items-center"
+                  >
+                    <GoRepo className="h-4 w-4 mr-2" />
+                    View on GitHub
+                  </motion.a>
                 </motion.div>
 
                 <motion.p variants={itemVariants} className="text-md max-w-3xl text-github-text">
@@ -322,10 +277,7 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
                   <div className="p-2 rounded-lg bg-github-dark">
                     {repository.language ? (
                       <span className="flex items-center">
-                        <span
-                          className="h-3 w-3 rounded-full mr-2"
-                          style={{ backgroundColor: getLanguageColor(repository.language) }}
-                        />
+                        <LanguageIcon language={repository.language} size="sm" className="mr-2" />
                         <span className="text-sm font-medium text-github-text">{repository.language}</span>
                       </span>
                     ) : (

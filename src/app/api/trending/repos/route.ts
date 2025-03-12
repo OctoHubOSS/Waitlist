@@ -1,36 +1,6 @@
 import { NextResponse } from "next/server";
-
-interface Repo {
-  id: string;
-  name: string;
-  url: string;
-  repo: string;
-  description: string;
-  language: string;
-  updatedAt: string;
-  stars: number;
-  forks: number;
-}
-
-// GitHub API response types
-interface GitHubApiResponse {
-  items: GitHubRepo[];
-}
-
-interface GitHubRepo {
-  id: number;
-  name: string;
-  full_name: string;
-  html_url: string;
-  description: string;
-  language: string;
-  updated_at: string;
-  stargazers_count: number;
-  forks_count: number;
-  owner: {
-    login: string;
-  }
-}
+import { GitHubRepoApiResponse } from "@/types/base";
+import { Repository } from "@/types/repos";
 
 export async function GET() {
   try {
@@ -48,7 +18,7 @@ export async function GET() {
       throw new Error(`Failed to fetch GitHub API: ${response.status}`);
     }
 
-    const data = await response.json() as GitHubApiResponse;
+    const data = await response.json() as GitHubRepoApiResponse;
     const repos = mapGitHubApiToRepos(data);
 
     return NextResponse.json(repos);
@@ -58,16 +28,29 @@ export async function GET() {
   }
 }
 
-function mapGitHubApiToRepos(data: GitHubApiResponse): Repo[] {
+function mapGitHubApiToRepos(data: GitHubRepoApiResponse): Repository[] {
   return data.items.map(item => ({
-    id: item.full_name,
-    name: `${item.owner.login}${item.name}`,
+    id: item.id, 
+    name: item.name,
     repo: item.full_name,
     description: item.description || "",
     language: item.language || "",
     stars: item.stargazers_count,
     forks: item.forks_count,
     updatedAt: new Date(item.updated_at).toLocaleDateString(),
-    url: item.html_url
+    url: item.html_url,
+    // Added fields with rich data
+    owner: {
+      login: item.owner.login,
+      avatar_url: item.owner.avatar_url,
+      url: item.owner.html_url
+    },
+    createdAt: new Date(item.created_at).toLocaleDateString(),
+    pushedAt: new Date(item.pushed_at).toLocaleDateString(),
+    openIssues: item.open_issues_count,
+    topics: item.topics || [],
+    license: item.license ? item.license.name : null,
+    visibility: item.visibility,
+    size: item.size
   }));
 }
