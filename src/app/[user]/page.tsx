@@ -239,7 +239,7 @@ function UserPage() {
                     forks: repository.forks_count,
                     updatedAt: isClient ? formatDate(repository.updated_at) : "",
                     size: repository.size,
-                    url: `https://github.com/${repository.name}`,
+                    url: repository.url,
                   }}
                 />
               ))}
