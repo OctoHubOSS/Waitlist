@@ -37,7 +37,7 @@ export default function Navigation() {
             src="/logo.webp"
           />
         </div>
-        <span className="bg-gradient-to-r from-neon-purple via-neon-blue to-neon-cyan bg-clip-text text-transparent">
+        <span>
           OctoSearch
         </span>
       </Link>

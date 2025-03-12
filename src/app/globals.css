@@ -31,6 +31,39 @@ body {
     @apply hover:shadow-md hover:border-github-link/40;
   }
   
+  /* New card sizing classes */
+  .card-fixed {
+    @apply flex flex-col h-full;
+  }
+  
+  .card-repo {
+    @apply min-h-[280px] flex flex-col;
+  }
+  
+  .card-user {
+    @apply min-h-[320px] flex flex-col;
+  }
+  
+  .card-content {
+    @apply flex-grow flex flex-col;
+  }
+  
+  .card-header {
+    @apply mb-3;
+  }
+  
+  .card-body {
+    @apply flex-grow flex flex-col;
+  }
+  
+  .card-footer {
+    @apply mt-auto pt-3 border-t border-github-border/40;
+  }
+  
+  .bio-text {
+    @apply text-github-text-secondary text-sm line-clamp-2 h-[2.5rem] mb-3;
+  }
+  
   .input {
     @apply w-full rounded-md border border-github-border bg-github-dark px-3 py-2 text-github-text 
     shadow-sm focus:border-github-link focus:outline-none focus:ring-1 focus:ring-github-link;

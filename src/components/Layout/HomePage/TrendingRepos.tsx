@@ -5,7 +5,7 @@ import { FaArrowRight } from "react-icons/fa";
 import RepositoryCard from "@/components/Cards/RepositoryCard";
 import { Repository } from "@/types/repos";
 
-export default function TrendingSection() {
+export default function TrendingRepositories() {
   const [trendingRepos, setTrendingRepos] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,19 +13,19 @@ export default function TrendingSection() {
     async function fetchTrendingRepos() {
       try {
         const response = await fetch("/api/trending/repos");
-        
+
         if (!response.ok) {
           throw new Error(`API returned ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
-        
+
         // Validate that the data is an array or has the expected structure
         if (Array.isArray(data)) {
-          setTrendingRepos(data);
+          setTrendingRepos(data.slice(0, 6)); // Limit to 6 repos
         } else if (data.repositories && Array.isArray(data.repositories)) {
           // Adjust this according to the new API's response structure
-          setTrendingRepos(data.repositories);
+          setTrendingRepos(data.repositories.slice(0, 6)); // Limit to 6 repos
         } else {
           console.error("Unexpected data format:", data);
           setTrendingRepos([]);
@@ -73,7 +73,6 @@ export default function TrendingSection() {
     },
   };
 
-  // The rest of the component remains the same
   return (
     <section className="w-full mb-12 md:mb-16">
       <motion.div
