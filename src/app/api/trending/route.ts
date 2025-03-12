@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as cheerio from "cheerio";
 
 interface Repo {
   id: string;
@@ -13,15 +12,44 @@ interface Repo {
   forks: number;
 }
 
+// GitHub API response types
+interface GitHubApiResponse {
+  items: GitHubRepo[];
+}
+
+interface GitHubRepo {
+  id: number;
+  name: string;
+  full_name: string;
+  html_url: string;
+  description: string;
+  language: string;
+  updated_at: string;
+  stargazers_count: number;
+  forks_count: number;
+  owner: {
+    login: string;
+  }
+}
+
 export async function GET() {
   try {
-    const response = await fetch("https://github.com/trending");
+    const response = await fetch(
+      "https://api.github.com/search/repositories?q=stars:>10000&sort=stars&order=desc", 
+      {
+        headers: {
+          "Accept": "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28"
+        }
+      }
+    );
+
     if (!response.ok) {
-      throw new Error("Failed to fetch GitHub trending page");
+      throw new Error(`Failed to fetch GitHub API: ${response.status}`);
     }
 
-    const html = await response.text();
-    const repos = scrapeGitHubTrending(html);
+    const data = await response.json() as GitHubApiResponse;
+    const repos = mapGitHubApiToRepos(data);
 
     return NextResponse.json(repos);
   } catch (err) {
@@ -30,41 +58,16 @@ export async function GET() {
   }
 }
 
-function scrapeGitHubTrending(html: string) {
-  const $ = cheerio.load(html);
-  const repos: Repo[] = [];
-
-  $('article.Box-row').each((i, element) => {
-    // Extract repository path (username/repo)
-    const repoPath = $(element).find('h2 a').attr('href')?.trim().substring(1) || '';
-    
-    // Extract description
-    const description = $(element).find('p').text().trim();
-    
-    // Extract language
-    const language = $(element).find('[itemprop="programmingLanguage"]').text().trim();
-    
-    // Extract stars
-    const starsText = $(element).find('a[href$="/stargazers"]').text().trim();
-    const stars = parseInt(starsText.replace(/,/g, '')) || 0;
-    
-    // Extract forks
-    const forksText = $(element).find('a[href$="/forks"]').text().trim();
-    const forks = parseInt(forksText.replace(/,/g, '')) || 0;
-    
-
-    repos.push({
-      id: repoPath,
-      name: repoPath.replace('/', ''),
-      repo: repoPath,
-      description,
-      language,
-      stars,
-      forks,
-      updatedAt: "Today",
-      url: `https://github.com/${repoPath}`
-    });
-  });
-
-  return repos;
+function mapGitHubApiToRepos(data: GitHubApiResponse): Repo[] {
+  return data.items.map(item => ({
+    id: item.full_name,
+    name: `${item.owner.login}${item.name}`,
+    repo: item.full_name,
+    description: item.description || "",
+    language: item.language || "",
+    stars: item.stargazers_count,
+    forks: item.forks_count,
+    updatedAt: new Date(item.updated_at).toLocaleDateString(),
+    url: item.html_url
+  }));
 }
