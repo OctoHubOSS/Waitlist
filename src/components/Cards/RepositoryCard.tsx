@@ -8,7 +8,10 @@ interface RepositoryProps {
   repo: {
     id: number;
     name: string;
-    owner?: string;
+    owner?: { 
+      login: string;
+      avatar_url: string;
+    };
     description: string;
     language: string;
     stars: number;
@@ -50,8 +53,8 @@ function RepositoryCard({ repo }: RepositoryProps) {
             <GoRepo className="h-3.5 w-3.5 mr-1.5" />
           )}
           <span className="text-xs">
-            {repo.owner ? `${repo.owner} /` : ""} 
-            <span className="font-semibold text-github-link ml-1">{repo.name}</span>
+           {repo.owner ? `${repo.owner.login} /` : ""}
+          <span className="font-semibold text-github-link ml-1">{repo.name}</span>
           </span>
           <span className="ml-2 text-xs px-1.5 py-0.5 rounded border border-github-border">
             {repo.visibility || "public"}

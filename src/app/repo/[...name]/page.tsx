@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { FaStar, FaCodeBranch, FaEye, FaExclamationTriangle, FaLock, FaUnlock, FaBalanceScale } from "react-icons/fa";
+import { FaStar, FaCodeBranch, FaEye, FaExclamationTriangle, FaLock, FaUnlock, FaBalanceScale, FaDatabase } from "react-icons/fa";
 import { GoRepo, GoGitBranch } from "react-icons/go";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
@@ -26,6 +26,7 @@ export interface Repository {
   license: {
     name: string;
   } | null;
+  size: number;
   allow_forking: boolean;
   is_template: boolean;
   default_branch: string;
@@ -82,6 +83,17 @@ async function fetchRepositoryData(owner: string, repo: string): Promise<Reposit
 
   return await response.json();
 }
+
+// Helper function to format repository size
+const formatRepoSize = (sizeInKb: number): string => {
+  if (sizeInKb < 1024) {
+    return `${sizeInKb} KB`;
+  } else if (sizeInKb < 1024 * 1024) {
+    return `${(sizeInKb / 1024).toFixed(2)} MB`;
+  } else {
+    return `${(sizeInKb / (1024 * 1024)).toFixed(2)} GB`;
+  }
+};
 
 function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
   const unwrappedParams = use(params);
@@ -187,7 +199,6 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
           variants={itemVariants}
           className="card glow-effect border border-github-border"
         >
-          <div className="bg-github-gradient" />
 
           <div className="p-8">
             <div className="flex flex-col md:flex-row md:items-start gap-8">
@@ -197,7 +208,7 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
               >
                 <img
                   alt={repository.owner.login}
-                  className="h-full w-full object-cover transition-all duration-300  hover:brightness-110"
+                  className="h-full w-full object-cover transition-all duration-300 hover:brightness-110"
                   src={repository.owner.avatar_url}
                 />
               </motion.div>
@@ -230,16 +241,16 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
                   </div>
 
                   <motion.a
-                    href={repository.html_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="btn btn-primary"
-                  >
-                    <GoRepo className="h-4 w-4 mr-2" />
-                    View on GitHub
-                  </motion.a>
+              href={repository.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all flex items-center"
+                >
+           <GoRepo className="h-4 w-4 mr-2" />
+          View on GitHub
+             </motion.a>
                 </motion.div>
 
                 <motion.p variants={itemVariants} className="text-md max-w-3xl text-github-text">
@@ -258,7 +269,7 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
                 )}
 
                 {/* Repository Stats */}
-                <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mt-6">
+                <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mt-6">
                   <div className="card card-hover p-3 text-center">
                     <div className="flex items-center justify-center text-yellow-400 mb-1">
                       <FaStar className="h-5 w-5" />
@@ -305,7 +316,7 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
             <div className="divider" />
 
             {/* Additional Repository Info */}
-            <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
               <div className="card card-hover">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 rounded-lg bg-github-dark">
@@ -338,6 +349,16 @@ function RepositoryPage({ params }: { params: Promise<{ name: string[] }> }) {
                 </div>
                 <h3 className="text-lg font-bold text-github-text">{repository.archived ? "Archived" : "Active"}</h3>
                 <p className="text-sm text-github-text-secondary mt-1">Repository status</p>
+              </div>
+
+              <div className="card card-hover">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-github-dark">
+                    <FaDatabase className="h-4 w-4 text-teal-500" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-bold text-github-text">{formatRepoSize(repository.size)}</h3>
+                <p className="text-sm text-github-text-secondary mt-1">Repository size</p>
               </div>
 
               <div className="card card-hover">

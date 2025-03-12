@@ -1,6 +1,6 @@
 "use client";
 
-import { HeroSection, FeaturesSection, TrendingSection } from "@/components/HomePage";
+import { HeroSection, FeaturesSection, TrendingSection } from "@/components/Layout/HomePage";
 
 export default function Home() {
   return (

@@ -18,6 +18,7 @@ export interface Repository {
   forks_count: number;
   language?: string;
   updated_at: string;
+  size?: number;
 }
 
 export interface User {
@@ -208,6 +209,7 @@ function UserPage() {
                     stars: repository.stargazers_count,
                     forks: repository.forks_count,
                     updatedAt: isClient ? formatDate(repository.updated_at) : "",
+                    size: repository.size,
                     url: repository.url,
                   }}
                 />
@@ -236,6 +238,7 @@ function UserPage() {
                     stars: repository.stargazers_count,
                     forks: repository.forks_count,
                     updatedAt: isClient ? formatDate(repository.updated_at) : "",
+                    size: repository.size,
                     url: `https://github.com/${repository.name}`,
                   }}
                 />

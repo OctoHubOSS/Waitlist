@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 
 interface Repo {
+  id: string;
+  name: string;
+  url: string;
   repo: string;
-  desc: string;
-  lang: string;
+  description: string;
+  language: string;
+  updatedAt: string;
   stars: number;
   forks: number;
 }
@@ -48,9 +52,11 @@ function scrapeGitHubTrending(html: string) {
     const forksText = $(element).find('a[href$="/forks"]').text().trim();
     const forks = parseInt(forksText.replace(/,/g, '')) || 0;
     
+
     repos.push({
       id: repoPath,
       name: repoPath.replace('/', ''),
+      repo: repoPath,
       description,
       language,
       stars,
