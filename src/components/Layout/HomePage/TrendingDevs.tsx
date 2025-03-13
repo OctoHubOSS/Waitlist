@@ -1,46 +1,24 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
 import { FaArrowRight } from "react-icons/fa";
 import UserCard from "@/components/Cards/UserCard";
+import { useTrendingDevelopers } from "@/utils/fetcher";
 import { User } from "@/types/users";
 
 export default function TrendingDevelopers() {
-    const [trendingDevs, setTrendingDevs] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
+    // Use our existing SWR hook - without time range parameter
+    const {
+        data: trendingDevs,
+        error,
+        isLoading
+    } = useTrendingDevelopers();
 
-    useEffect(() => {
-        async function fetchTrendingDevs() {
-            try {
-                const response = await fetch("/api/trending/devs");
+    // Process the data - limit to 6 developers
+    const displayDevs = Array.isArray(trendingDevs)
+        ? trendingDevs.slice(0, 6)
+        : [];
 
-                if (!response.ok) {
-                    throw new Error(`API returned ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-
-                // Validate that the data is an array or has the expected structure
-                if (Array.isArray(data)) {
-                    setTrendingDevs(data.slice(0, 6)); // Limit to 6 developers
-                } else if (data.developers && Array.isArray(data.developers)) {
-                    // Adjust according to API response structure
-                    setTrendingDevs(data.developers.slice(0, 6)); // Limit to 6 developers
-                } else {
-                    console.error("Unexpected data format:", data);
-                    setTrendingDevs([]);
-                }
-            } catch (error) {
-                console.error("Error fetching trending developers:", error);
-                setTrendingDevs([]);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchTrendingDevs();
-    }, []);
-
-    // Framer Motion variants - same as TrendingSection
+    // Framer Motion variants
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -82,6 +60,7 @@ export default function TrendingDevelopers() {
                 transition={{ delay: 0.6, duration: 0.6 }}
             >
                 <h2 className="text-xl md:text-2xl font-semibold">Trending Entities</h2>
+
                 <Link href="/trending/developers" className="flex items-center text-github-accent hover:text-github-accent-hover text-sm md:text-base font-medium">
                     <motion.span
                         initial={{ x: 0 }}
@@ -100,7 +79,7 @@ export default function TrendingDevelopers() {
                 </Link>
             </motion.div>
 
-            {loading ? (
+            {isLoading ? (
                 <motion.div
                     className="flex justify-center items-center min-h-40"
                     initial={{ opacity: 0 }}
@@ -117,6 +96,10 @@ export default function TrendingDevelopers() {
                         }}
                     />
                 </motion.div>
+            ) : error ? (
+                <div className="text-center py-8">
+                    <p className="text-github-text-secondary">Failed to load trending developers</p>
+                </div>
             ) : (
                 <motion.div
                     className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6"
@@ -124,10 +107,10 @@ export default function TrendingDevelopers() {
                     initial="hidden"
                     animate="visible"
                 >
-                    {Array.isArray(trendingDevs) && trendingDevs.length > 0 ? (
-                        trendingDevs.map((dev, index) => (
+                    {displayDevs.length > 0 ? (
+                        displayDevs.map((dev: User, index: number) => (
                             <motion.div
-                                key={dev.id}
+                                key={dev.id || `dev-${index}`}
                                 variants={itemVariants}
                                 custom={index}
                                 whileHover="hover"

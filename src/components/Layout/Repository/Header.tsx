@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
-import { FaLock, FaUnlock } from "react-icons/fa";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FaLock, FaUnlock, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { GoRepo } from "react-icons/go";
 import { RepoPage } from "@/types/repos";
 
@@ -9,6 +10,17 @@ interface RepositoryHeaderProps {
 }
 
 export default function RepositoryHeader({ repository, itemVariants }: RepositoryHeaderProps) {
+    const [showAllTopics, setShowAllTopics] = useState(false);
+    const MAX_VISIBLE_TOPICS = 3;
+
+    // Determine if we need to show the "View All" button
+    const hasMoreTopics = repository.topics && repository.topics.length > MAX_VISIBLE_TOPICS;
+
+    // Get visible topics based on current state
+    const visibleTopics = repository.topics ?
+        (showAllTopics ? repository.topics : repository.topics.slice(0, MAX_VISIBLE_TOPICS))
+        : [];
+
     return (
         <div className="flex flex-col md:flex-row md:items-start gap-8">
             <motion.div
@@ -39,14 +51,6 @@ export default function RepositoryHeader({ repository, itemVariants }: Repositor
                                 </span>
                             )}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                            <img
-                                src={repository.owner.avatar_url}
-                                alt={repository.owner.login}
-                                className="w-5 h-5 rounded-full"
-                            />
-                            <p className="text-github-text-secondary font-medium">{repository.owner.login}</p>
-                        </div>
                     </div>
 
                     <motion.a
@@ -66,14 +70,46 @@ export default function RepositoryHeader({ repository, itemVariants }: Repositor
                     {repository.description || "No description provided"}
                 </motion.p>
 
-                {/* Repository Topics */}
+                {/* Repository Topics with View All Button */}
                 {repository.topics && repository.topics.length > 0 && (
-                    <motion.div variants={itemVariants} className="flex flex-wrap gap-2 mt-2">
-                        {repository.topics.map((topic) => (
-                            <span key={topic} className="badge badge-primary">
-                                {topic}
-                            </span>
-                        ))}
+                    <motion.div variants={itemVariants} className="mt-2">
+                        <div className="flex flex-wrap gap-2 items-center">
+                            {/* Visible topics */}
+                            <AnimatePresence>
+                                {visibleTopics.map((topic) => (
+                                    <motion.span
+                                        key={topic}
+                                        className="badge badge-primary"
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        transition={{ duration: 0.15 }}
+                                    >
+                                        {topic}
+                                    </motion.span>
+                                ))}
+                            </AnimatePresence>
+
+                            {/* View All / View Less Button */}
+                            {hasMoreTopics && (
+                                <button
+                                    onClick={() => setShowAllTopics(!showAllTopics)}
+                                    className="flex items-center text-xs text-github-link hover:text-github-link-hover ml-1"
+                                >
+                                    {showAllTopics ? (
+                                        <>
+                                            <span>View Less</span>
+                                            <FaChevronUp className="ml-1 h-3 w-3" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>+{repository.topics.length - MAX_VISIBLE_TOPICS} more</span>
+                                            <FaChevronDown className="ml-1 h-3 w-3" />
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
                     </motion.div>
                 )}
             </div>

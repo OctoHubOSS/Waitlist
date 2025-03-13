@@ -1,3 +1,71 @@
-node_modules
-.next
-.out
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Next.js build output
+/.next
+/.next/
+/out/
+/build
+.vercel
+
+# Testing
+/coverage
+/.nyc_output
+
+# Environment variables
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs and editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+*.sublime-project
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.code-workspace
+
+# Misc
+.tmp
+.temp
+.cache
+.docusaurus
+.serverless/
+tsconfig.tsbuildinfo
+
+# Turborepo
+.turbo
+
+# Bundle analysis
+analyze-client.html
+analyze-server.html

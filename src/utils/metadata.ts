@@ -18,27 +18,27 @@ export function generateMetadata({
   imageUrl = "/og-image.png",
   keywords = [],
   canonicalUrl,
-  metadataBase = process.env.NEXT_PUBLIC_APP_URL || "https://octosearch.vercel.app",
+  metadataBase = process.env.NEXT_PUBLIC_APP_URL || "https://octosearch.dev",
 }: GenerateMetadataParams): Metadata {
   // Base app name
   const siteName = "OctoSearch";
-  
+
   // Create the full title
-  const fullTitle = title 
+  const fullTitle = title
     ? `${title} | ${siteName}`
     : `${siteName} - GitHub Discovery Tool`;
-  
+
   // Default description
-  const metaDescription = description || 
+  const metaDescription = description ||
     "Discover GitHub profiles, organizations, and repositories easily";
-  
+
   return {
     metadataBase: new URL(metadataBase),
     title: fullTitle,
     description: metaDescription,
     keywords: [
-      "GitHub", 
-      "repository search", 
+      "GitHub",
+      "repository search",
       "developer tools",
       ...keywords
     ],
@@ -72,6 +72,14 @@ export function generateMetadata({
       },
     }),
   };
+}
+
+export function generateNotFoundMetadata(): Metadata {
+  return generateMetadata({
+    title: 'Not Found',
+    description: 'We were unable to locate whatever you were looking for!',
+    keywords: ['Not Found', '404'],
+  })
 }
 
 /**
