@@ -20,7 +20,12 @@ export default function RepositoryPageClient({ params }: { params: { name: strin
     const [owner, setOwner] = useState<string>("");
     const [repo, setRepo] = useState<string>("");
     const [error, setError] = useState<string | null>(null);
-    const [viewMode, setViewMode] = useState<"standard" | "explorer">("standard");
+    const [viewMode, setViewMode] = useState<"standard" | "explorer">(
+        // Get saved preference from localStorage or default to "standard"
+        typeof window !== "undefined"
+            ? localStorage.getItem("fileExplorerViewMode") as "standard" | "explorer" || "standard"
+            : "standard"
+    );
     const pathname = usePathname();
 
     // Extract owner and repo from params or URL
@@ -37,16 +42,25 @@ export default function RepositoryPageClient({ params }: { params: { name: strin
         }
     }, [params, pathname]);
 
-    // Use repository data fetcher
+    // Use repository data fetcher with better error handling for Octokit responses
     const { data, error: fetchError, isLoading } = useRepository(owner, repo);
 
-    // Handle errors from fetcher
+    // Handle errors from fetcher with improved error handling
     useEffect(() => {
         if (fetchError) {
             console.error("Repository fetch error:", fetchError);
-            setError(fetchError.error || "Failed to load repository");
+            const errorMessage = fetchError.error ||
+                (typeof fetchError === 'string' ? fetchError : "Failed to load repository");
+            setError(errorMessage);
         }
     }, [fetchError]);
+
+    // Save view mode preference to localStorage
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            localStorage.setItem("fileExplorerViewMode", viewMode);
+        }
+    }, [viewMode]);
 
     // Loading state
     if (isLoading || (!data && !error)) {

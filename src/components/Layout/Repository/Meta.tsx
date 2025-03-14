@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { fetchRepositoryData } from "@/lib/API";
+import { getOctokitClient } from "@/utils/github";
 import { generateRepoMetadata } from "@/utils/metadata";
 
 export async function generateMetadata({
@@ -7,19 +7,42 @@ export async function generateMetadata({
 }: {
     params: { name: string[] }
 }): Promise<Metadata> {
-    try {
-        // Await params before accessing name
-        const paramsData = await params;
-        const [owner, repo] = paramsData.name;
+    // For Next.js dynamic metadata generation, we need to carefully handle params
+    // We can't access params.name directly in a server component without awaiting params
 
-        const repoData = await fetchRepositoryData(owner, repo);
-        return generateRepoMetadata(repo, owner, repoData.description);
+    try {
+        // Use Promise.resolve() to properly handle params in the async context
+        const resolvedParams = await Promise.resolve(params);
+        const nameSegments = resolvedParams?.name || [];
+
+        // Make sure we have both owner and repo
+        if (nameSegments.length < 2) {
+            throw new Error("Missing owner or repo name");
+        }
+
+        const owner = nameSegments[0];
+        const repo = nameSegments[1];
+
+        // Use Octokit client directly for server component
+        const octokit = getOctokitClient();
+
+        const { data: repoData } = await octokit.rest.repos.get({
+            owner,
+            repo
+        });
+
+        return generateRepoMetadata(repo, owner, repoData.description || undefined);
     } catch (error) {
-        // Await params in catch block as well
-        const paramsData = await params;
+        // In case of error, generate generic metadata
+        // Use safe access to params
+        const resolvedParams = await Promise.resolve(params);
+        const nameSegments = resolvedParams?.name || [];
+        const owner = nameSegments[0] || "Owner";
+        const repo = nameSegments[1] || "Repository";
+
         return generateRepoMetadata(
-            paramsData.name[1] || "Repository",
-            paramsData.name[0] || "Owner",
+            repo,
+            owner,
             "GitHub repository information"
         );
     }

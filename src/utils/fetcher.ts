@@ -5,14 +5,20 @@
 import useSWR, { SWRConfiguration, mutate } from 'swr';
 import { GitHubBranch, GitHubErrorResponse, GitHubFileItem } from '@/types/swr';
 
-
 // Fetcher function for SWR
 const fetcher = async (url: string) => {
     const response = await fetch(url);
 
     if (!response.ok) {
         // Parse error response
-        const errorData = await response.json();
+        let errorData: any;
+        try {
+            errorData = await response.json();
+        } catch (e) {
+            // If JSON parsing fails, create a simple error object
+            errorData = { error: `API error: ${response.status}` };
+        }
+
         const error: GitHubErrorResponse = {
             error: errorData.error || `API error: ${response.status}`,
             message: errorData.message,
@@ -72,14 +78,14 @@ export function useRepositoryFiles(
  * Hook for fetching repository branches
  */
 export function useRepositoryBranches(owner: string, repo: string, config?: SWRConfiguration) {
-    // Using direct GitHub API since our API doesn't have a branch endpoint yet
+    // Update to use our API endpoint instead of direct GitHub access
     const cacheKey = owner && repo ?
-        `https://api.github.com/repos/${owner}/${repo}/branches` :
+        `/api/repo/branches?owner=${owner}&repo=${repo}` :
         null;
 
     return useSWR(
         cacheKey,
-        (url) => fetcher(url),
+        fetcher,
         { ...defaultCacheConfig, ...config }
     );
 }
@@ -107,6 +113,7 @@ export function prefetchRepositoryFiles(
 
 /**
  * Fetch file content directly
+ * Note: This still uses direct GitHub URLs as it's typically for raw file content
  */
 export async function fetchFileContent(
     owner: string,
@@ -114,67 +121,18 @@ export async function fetchFileContent(
     path: string,
     branch: string = "main"
 ): Promise<string> {
-    const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
-    const response = await fetch(url);
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
-    }
-
-    return response.text();
-}
-
-/**
- * Create API endpoint for branches
- */
-// filepath: d:\@octoflow\octosearch\src\app\api\repo\branches\route.ts
-import { NextResponse, NextRequest } from "next/server";
-
-export async function GET(req: NextRequest) {
     try {
-        // Extract query parameters
-        const searchParams = req.nextUrl.searchParams;
-        const owner = searchParams.get('owner');
-        const repo = searchParams.get('repo');
+        const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+        const response = await fetch(url);
 
-        // Validate required parameters
-        if (!owner || !repo) {
-            return NextResponse.json(
-                { error: "Missing required parameters: 'owner' and 'repo'" },
-                { status: 400 }
-            );
-        }
-
-        // Fetch branches from GitHub API
-        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches`, {
-            headers: {
-                "Accept": "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28"
-            },
-        });
-
-        // Handle GitHub API errors
         if (!response.ok) {
-            if (response.status === 404) {
-                return NextResponse.json(
-                    { error: "Repository not found" },
-                    { status: 404 }
-                );
-            }
-
-            return NextResponse.json(
-                { error: `GitHub API error: ${response.status} ${response.statusText}` },
-                { status: response.status }
-            );
+            throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
         }
 
-        // Return branches data
-        const branches = await response.json();
-        return NextResponse.json(branches);
-    } catch (err) {
-        const error = err as Error;
-        console.error("Error fetching repository branches:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return response.text();
+    } catch (error) {
+        console.error(`Error fetching raw file content for ${path}:`, error);
+        throw new Error(`Could not load file content. ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 
@@ -196,5 +154,26 @@ export function useTrendingDevelopers(since: 'daily' | 'weekly' | 'monthly' = 'd
  */
 export function prefetchTrendingDevelopers(since: 'daily' | 'weekly' | 'monthly' = 'daily') {
     const cacheKey = `/api/trending/devs?since=${since}`;
+    return mutate(cacheKey, fetcher(cacheKey), false);
+}
+
+/**
+ * Hook for fetching trending repositories
+ */
+export function useTrendingRepositories(config?: SWRConfiguration) {
+    const cacheKey = `/api/trending/repos`;
+
+    return useSWR(
+        cacheKey,
+        fetcher,
+        { ...defaultCacheConfig, ...config }
+    );
+}
+
+/**
+ * Prefetch trending repositories data
+ */
+export function prefetchTrendingRepositories() {
+    const cacheKey = `/api/trending/repos`;
     return mutate(cacheKey, fetcher(cacheKey), false);
 }

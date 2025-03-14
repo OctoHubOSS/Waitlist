@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { FaCodeBranch, FaLock } from "react-icons/fa";
-import { GoRepo } from "react-icons/go";
+import { GoRepo, GoRepoForked } from "react-icons/go";
 import { format } from "date-fns";
 import { RepoPage } from "@/types/repos";
 
@@ -33,10 +33,18 @@ export default function RepositoryFooter({ repository, itemVariants }: Repositor
                     <div className="flex items-center space-x-2 text-github-text-secondary">
                         {repository.is_template ? (
                             <GoRepo className="h-4 w-4 text-neon-purple" />
+                        ) : repository.fork ? (
+                            <GoRepoForked className="h-4 w-4 text-github-accent" />
                         ) : (
                             <span className="text-github-text-secondary">•</span>
                         )}
-                        <span>{repository.is_template ? "Template Repository" : "Standard Repository"}</span>
+                        <span>
+                            {repository.is_template
+                                ? "Template Repository"
+                                : repository.fork
+                                    ? "Fork Repository"
+                                    : "Standard Repository"}
+                        </span>
                     </div>
                 </div>
             </div>

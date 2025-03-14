@@ -1,6 +1,6 @@
 import { useState, useEffect, ReactNode } from "react";
 import { FileItem, FileBrowserProps, Branch } from "@/types/repos";
-import { useRepositoryBranches, useRepositoryFiles } from "@/utils/fetcher";
+import { useRepositoryBranches, useRepositoryFiles, fetchFileContent } from "@/utils/fetcher";
 import { ModernFileExplorerProvider } from "./hooks/useModernFileExplorer";
 import ModernBranchNavBar from "./components/BranchNavBar";
 import ModernFileViewer from "./components/FileViewer";
@@ -94,14 +94,14 @@ export default function ModernFileExplorer({
                 return;
             }
 
-            const response = await fetch(file.download_url ||
-                `https://raw.githubusercontent.com/${owner}/${repo}/${selectedBranch}/${file.path}`);
+            // Use the exported fetcher utility instead of raw fetch
+            const content = await fetchFileContent(
+                owner,
+                repo,
+                file.path,
+                selectedBranch
+            );
 
-            if (!response.ok) {
-                throw new Error(`Failed to fetch file content: ${response.status}`);
-            }
-
-            const content = await response.text();
             setFileContent(content);
         } catch (err) {
             setFileViewError((err as Error).message);

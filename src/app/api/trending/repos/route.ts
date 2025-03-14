@@ -1,36 +1,30 @@
 import { NextResponse } from "next/server";
-import { GitHubRepoApiResponse } from "@/types/base";
 import { Repository } from "@/types/repos";
+import { getOctokitClient } from "@/utils/github";
 
 export async function GET() {
   try {
-    const response = await fetch(
-      "https://api.github.com/search/repositories?q=stars:>10000&sort=stars&order=desc", 
-      {
-        headers: {
-          "Accept": "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28"
-        }
-      }
-    );
+    const octokit = getOctokitClient();
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch GitHub API: ${response.status}`);
-    }
+    const { data } = await octokit.rest.search.repos({
+      q: "stars:>10000",
+      sort: "stars",
+      order: "desc",
+      per_page: 30
+    });
 
-    const data = await response.json() as GitHubRepoApiResponse;
     const repos = mapGitHubApiToRepos(data);
-
     return NextResponse.json(repos);
   } catch (err) {
     const error = err as Error;
+    console.error("Error fetching trending repos:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-function mapGitHubApiToRepos(data: GitHubRepoApiResponse): Repository[] {
-  return data.items.map(item => ({
-    id: item.id, 
+function mapGitHubApiToRepos(data: any): Repository[] {
+  return data.items.map((item: any) => ({
+    id: item.id,
     name: item.name,
     repo: item.full_name,
     description: item.description || "",

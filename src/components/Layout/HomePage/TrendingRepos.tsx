@@ -1,44 +1,16 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
 import { FaArrowRight } from "react-icons/fa";
 import RepositoryCard from "@/components/Cards/RepositoryCard";
+import { useTrendingRepositories } from "@/utils/fetcher";
 import { Repository } from "@/types/repos";
 
 export default function TrendingRepositories() {
-  const [trendingRepos, setTrendingRepos] = useState<Repository[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Replace useEffect/useState fetch with SWR hook
+  const { data: trendingRepos, error, isLoading } = useTrendingRepositories();
 
-  useEffect(() => {
-    async function fetchTrendingRepos() {
-      try {
-        const response = await fetch("/api/trending/repos");
-
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        // Validate that the data is an array or has the expected structure
-        if (Array.isArray(data)) {
-          setTrendingRepos(data.slice(0, 6)); // Limit to 6 repos
-        } else if (data.repositories && Array.isArray(data.repositories)) {
-          // Adjust this according to the new API's response structure
-          setTrendingRepos(data.repositories.slice(0, 6)); // Limit to 6 repos
-        } else {
-          console.error("Unexpected data format:", data);
-          setTrendingRepos([]);
-        }
-      } catch (error) {
-        console.error("Error fetching trending repositories:", error);
-        setTrendingRepos([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchTrendingRepos();
-  }, []);
+  // Use only up to 6 repositories for display
+  const displayRepos = Array.isArray(trendingRepos) ? trendingRepos.slice(0, 6) : [];
 
   // Framer Motion variants remain the same
   const containerVariants = {
@@ -100,7 +72,7 @@ export default function TrendingRepositories() {
         </Link>
       </motion.div>
 
-      {loading ? (
+      {isLoading ? (
         <motion.div
           className="flex justify-center items-center min-h-40"
           initial={{ opacity: 0 }}
@@ -117,6 +89,10 @@ export default function TrendingRepositories() {
             }}
           />
         </motion.div>
+      ) : error ? (
+        <div className="text-center py-8">
+          <p className="text-github-text-secondary">Failed to load trending repositories</p>
+        </div>
       ) : (
         <motion.div
           className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
@@ -124,8 +100,8 @@ export default function TrendingRepositories() {
           initial="hidden"
           animate="visible"
         >
-          {Array.isArray(trendingRepos) && trendingRepos.length > 0 ? (
-            trendingRepos.map((repo, index) => (
+          {displayRepos.length > 0 ? (
+            displayRepos.map((repo: Repository, index: number) => (
               <motion.div
                 key={repo.id}
                 variants={itemVariants}
