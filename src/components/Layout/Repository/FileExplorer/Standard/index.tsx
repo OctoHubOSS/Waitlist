@@ -11,7 +11,7 @@ export interface ExtendedFileBrowserProps extends FileBrowserProps {
     children?: ReactNode;
 }
 
-export default function FileBrowser({
+export default function StandardFileBrowser({
     owner,
     repo,
     defaultBranch,

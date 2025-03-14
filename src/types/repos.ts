@@ -146,4 +146,30 @@ export interface FileExplorerContextType {
   getFileLanguage: (filename: string) => string;
   isMarkdown: (filename: string) => boolean;
   isImage: (filename: string) => boolean;
+
+  // Add these new properties for syntax highlighting theme
+  syntaxTheme: string;
+  setSyntaxTheme: (theme: string) => void;
+}
+
+export interface ModernExplorerResult {
+  files: FileItem[];
+  currentPath: string;
+  navigateToPath: (path: string) => void;
+  navigateUp: () => void;
+  viewFile: (file: FileItem) => void;
+  selectedFile: FileItem | null;
+  fileContent: string | null;
+  fileViewLoading: boolean;
+  fileViewError: string | null;
+  selectedBranch: string;
+  isImage: (filename: string) => boolean;
+  isMarkdown: (filename: string) => boolean;
+  backToDirectory: () => void;
+  branches: Branch[];
+  branchMenuOpen: boolean;
+  setBranchMenuOpen: (open: boolean) => void;
+  changeBranch: (branchName: string) => void;
+  getFileLanguage: (filename: string) => string;
+  isLoading: boolean;
 }

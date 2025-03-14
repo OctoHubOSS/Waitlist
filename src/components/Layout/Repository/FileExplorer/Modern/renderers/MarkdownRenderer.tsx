@@ -5,15 +5,18 @@ import rehypeSanitize from 'rehype-sanitize';
 import rehypeSlug from 'rehype-slug';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { useModernFileExplorer } from '../hooks/useModernFileExplorer';
 import 'github-markdown-css/github-markdown-dark.css';
 
-interface MarkdownRendererProps {
+interface ModernMarkdownRendererProps {
     content: string;
 }
 
-const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
+export default function ModernMarkdownRenderer({ content }: ModernMarkdownRendererProps) {
+    const { syntaxTheme = 'atomOneDark' } = useModernFileExplorer();
+
     return (
-        <div className="p-6 bg-github-dark-secondary markdown-body rounded-lg">
+        <div className="p-6 bg-github-dark markdown-body">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw, rehypeSanitize, rehypeSlug]}
@@ -23,7 +26,7 @@ const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
                         return match ? (
                             <SyntaxHighlighter
                                 language={match[1]}
-                                style={vscDarkPlus as any}
+                                style={vscDarkPlus}
                                 PreTag="div"
                                 showLineNumbers
                                 {...props}
@@ -54,6 +57,4 @@ const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
             </ReactMarkdown>
         </div>
     );
-};
-
-export default MarkdownRenderer;
+}

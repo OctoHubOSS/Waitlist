@@ -1,18 +1,16 @@
-interface ImageRendererProps {
+interface ModernImageRendererProps {
     url: string;
     name: string;
 }
 
-const ImageRenderer = ({ url, name }: ImageRendererProps) => {
+export default function ModernImageRenderer({ url, name }: ModernImageRendererProps) {
     return (
-        <div className="flex justify-center">
+        <div className="p-6 bg-github-dark flex justify-center">
             <img
                 src={url}
                 alt={name}
-                className="max-w-full max-h-[500px] object-contain rounded-lg shadow-xl"
+                className="max-w-full max-h-[600px] object-contain rounded-lg shadow-md"
             />
         </div>
     );
-};
-
-export default ImageRenderer;
+}
