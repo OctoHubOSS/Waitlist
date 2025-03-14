@@ -1,10 +1,10 @@
-export interface User {
+export interface BaseUser {
   id: number;
   login: string;
-  name?: string;
   avatarUrl: string;
-  bio?: string | null;
   type: "User" | "Organization";
+  name?: string;
+  bio?: string | null;
   company?: string | null;
   location?: string | null;
   blog?: string | null;
@@ -12,15 +12,18 @@ export interface User {
   followers?: number;
   following?: number;
   publicRepos?: number;
+  public_repos?: number;
   createdAt?: string;
   updatedAt?: string;
-  // Enhanced stats with formatted values
+  twitter_username?: string | null;
+}
+
+export interface User extends BaseUser {
   stats?: {
     followersFormatted: string;
     followingFormatted: string;
     reposFormatted: string;
   };
-  // Top repositories
   topRepositories?: Array<{
     id: number;
     name: string;
@@ -28,17 +31,8 @@ export interface User {
   }>;
 }
 
-export interface UserArray {
-  user: User;
-}
-
-export interface Developer {
-  id: number;
-  login: string;
-  name: string;
-  avatar_url: string;
+export interface Developer extends BaseUser {
   url: string;
-  type: string;
   followers_url: string;
   following_url: string;
   repos_url: string;
@@ -47,11 +41,8 @@ export interface Developer {
   follower_count: number;
 }
 
-export interface GitHubUser {
-  id: number;
-  login: string;
+export interface GitHubUser extends BaseUser {
   node_id: string;
-  avatar_url: string;
   gravatar_id: string;
   url: string;
   html_url: string;
@@ -64,8 +55,11 @@ export interface GitHubUser {
   repos_url: string;
   events_url: string;
   received_events_url: string;
-  type: string;
   site_admin: boolean;
   score: number;
   user_view_type?: string;
+}
+
+export interface UserArray {
+  user: User;
 }

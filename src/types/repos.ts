@@ -1,93 +1,59 @@
-export interface RepoArray {
-  repo: Repository
-}
-
-export interface Repository {
+export interface BaseRepository {
   id: number;
   name: string;
-  url: string;
-  repo: string;
   description: string;
-  language: string;
-  updatedAt: string;
-  stars: number;
-  forks: number;
-  owner: {
-    login: string;
-    avatar_url: string;
-    url: string;
-  };
-  createdAt: string;
-  pushedAt: string;
-  openIssues: number;
-  topics: string[];
-  license: string | null;
-  visibility: string;
-  size: number;
-}
-
-export interface RawData {
-  id: number;
-  name: string;
-  full_name: string;
-  html_url: string;
-  description: string;
-  language: string;
+  language?: string;
   updated_at: string;
   created_at: string;
   pushed_at: string;
   stargazers_count: number;
   forks_count: number;
   open_issues_count: number;
-  topics: string[];
-  license: {
-    key: string;
-    name: string;
-    spdx_id: string;
-    url: string;
-  } | null;
-  visibility: string;
-  size: number;
-  owner: {
-    login: string;
-    avatar_url: string;
-    html_url: string;
-  };
-}
-
-export interface RepoPage {
-  name: string;
-  description: string;
-  html_url: string;
-  id: string;
-  stargazers_count: number;
-  forks_count: number;
-  watchers_count: number;
-  open_issues_count: number;
-  language?: string;
-  updated_at: string;
-  owner: {
-    login: string;
-    avatar_url: string;
-  };
-  archived: boolean;
-  license: {
-    name: string;
-  } | null;
-  size: number;
-  allow_forking: boolean;
-  is_template: boolean;
-  default_branch: string;
   topics?: string[];
+  license?: {
+    name: string;
+    key?: string;
+    spdx_id?: string;
+    url?: string;
+  } | null;
   visibility?: string;
+  size: number;
+  owner: {
+    login: string;
+    avatar_url: string;
+    url?: string;
+    html_url?: string;
+  };
+  fork?: boolean;
+  is_template?: boolean;
+  default_branch?: string;
 }
 
-export interface FileBrowserProps {
-  owner: string;
+export interface Repository extends BaseRepository {
+  url: string;
   repo: string;
-  defaultBranch?: string;
-  initialContents?: FileItem[] | null;
-  currentPath?: string;
+  updatedAt: string;
+  stars: number;
+  forks: number;
+  openIssues: number;
+  pushedAt: string;
+}
+
+export interface RawData extends BaseRepository {
+  full_name: string;
+  html_url: string;
+}
+
+export interface RepoPage extends BaseRepository {
+  html_url: string;
+  id: number;
+  watchers_count: number;
+  archived: boolean;
+  allow_forking: boolean;
+}
+
+export interface RepoArray {
+  repo: Repository;
 }
 
 export interface FileItem {
@@ -100,6 +66,15 @@ export interface FileItem {
   download_url?: string;
   content?: string;
 }
+
+export interface FileBrowserProps {
+  owner: string;
+  repo: string;
+  defaultBranch?: string;
+  initialContents?: FileItem[] | null;
+  currentPath?: string;
+}
+
 export interface Branch {
   name: string;
   commit: {
@@ -109,67 +84,47 @@ export interface Branch {
   protected: boolean;
 }
 
-export interface FileExplorerContextType {
-  // Repository info
+export interface BaseFileExplorer {
   owner: string;
   repo: string;
-
-  // Navigation state
   currentPath: string;
-  navigateToPath: (path: string) => void;
-  navigateUp: () => void;
-  breadcrumbs: { name: string; path: string }[];
-
-  // File data
   files: FileItem[];
   isLoading: boolean;
   error: string | null;
-
-  // File viewing
   selectedFile: FileItem | null;
   fileContent: string | null;
   fileViewLoading: boolean;
   fileViewError: string | null;
-  viewFile: (file: FileItem) => void;
-  backToDirectory: () => void;
-
-  // Branch handling
   branches: Branch[];
   selectedBranch: string;
   branchesLoading: boolean;
   branchMenuOpen: boolean;
+}
+
+export interface FileExplorerContextType extends BaseFileExplorer {
+  navigateToPath: (path: string) => void;
+  navigateUp: () => void;
+  breadcrumbs: { name: string; path: string }[];
+  viewFile: (file: FileItem) => void;
+  backToDirectory: () => void;
   setBranchMenuOpen: (isOpen: boolean) => void;
   changeBranch: (branchName: string) => void;
-
-  // Utility functions
   formatBytes: (bytes: number) => string;
   getFileLanguage: (filename: string) => string;
   isMarkdown: (filename: string) => boolean;
   isImage: (filename: string) => boolean;
-
-  // Add these new properties for syntax highlighting theme
   syntaxTheme: string;
   setSyntaxTheme: (theme: string) => void;
 }
 
-export interface ModernExplorerResult {
-  files: FileItem[];
-  currentPath: string;
+export interface ModernExplorerResult extends BaseFileExplorer {
   navigateToPath: (path: string) => void;
   navigateUp: () => void;
   viewFile: (file: FileItem) => void;
-  selectedFile: FileItem | null;
-  fileContent: string | null;
-  fileViewLoading: boolean;
-  fileViewError: string | null;
-  selectedBranch: string;
-  isImage: (filename: string) => boolean;
-  isMarkdown: (filename: string) => boolean;
   backToDirectory: () => void;
-  branches: Branch[];
-  branchMenuOpen: boolean;
   setBranchMenuOpen: (open: boolean) => void;
   changeBranch: (branchName: string) => void;
   getFileLanguage: (filename: string) => string;
-  isLoading: boolean;
+  isMarkdown: (filename: string) => boolean;
+  isImage: (filename: string) => boolean;
 }

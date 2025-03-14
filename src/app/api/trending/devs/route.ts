@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     // Get parameters for potentially different queries
     const searchParams = req.nextUrl.searchParams;
-    const since = searchParams.get('since') || 'daily';
+    const since = searchParams.get("since") || "daily";
 
     const octokit = getOctokitClient();
 
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       q: `followers:>${followersThreshold}`,
       sort: "followers",
       order: "desc",
-      per_page: 10
+      per_page: 10,
     });
 
     // Fetch detailed information for each user
@@ -39,23 +39,29 @@ export async function GET(req: NextRequest) {
   }
 }
 
-async function fetchDetailedUserData(octokit: any, users: any[]): Promise<User[]> {
+async function fetchDetailedUserData(
+  octokit: any,
+  users: any[],
+): Promise<User[]> {
   // Use Promise.allSettled to handle individual failures
   const usersWithDetailsResults = await Promise.allSettled(
-    users.map(user => fetchSingleUserDetails(octokit, user))
+    users.map((user) => fetchSingleUserDetails(octokit, user)),
   );
 
   // Filter out rejected promises and map to values
   return usersWithDetailsResults
-    .filter((result): result is PromiseFulfilledResult<User> => result.status === 'fulfilled')
-    .map(result => result.value);
+    .filter(
+      (result): result is PromiseFulfilledResult<User> =>
+        result.status === "fulfilled",
+    )
+    .map((result) => result.value);
 }
 
 async function fetchSingleUserDetails(octokit: any, user: any): Promise<User> {
   try {
     // Fetch detailed user data
     const { data: userData } = await octokit.rest.users.getByUsername({
-      username: user.login
+      username: user.login,
     });
 
     // Fetch top repositories
@@ -85,7 +91,7 @@ async function fetchSingleUserDetails(octokit: any, user: any): Promise<User> {
         reposFormatted: formatNumber(userData.public_repos),
       },
       // Add top repos
-      topRepositories: topRepos
+      topRepositories: topRepos,
     };
   } catch (error) {
     console.error(`Failed to fetch details for user ${user.login}:`, error);
@@ -103,26 +109,32 @@ async function fetchSingleUserDetails(octokit: any, user: any): Promise<User> {
       stats: {
         followersFormatted: "0",
         followingFormatted: "0",
-        reposFormatted: "0"
+        reposFormatted: "0",
       },
-      topRepositories: []
+      topRepositories: [],
     };
   }
 }
 
-async function fetchTopRepositories(octokit: any, username: string, limit = 3): Promise<Array<{ id: number, name: string, stars: number }>> {
+async function fetchTopRepositories(
+  octokit: any,
+  username: string,
+  limit = 3,
+): Promise<Array<{ id: number; name: string; stars: number }>> {
   try {
     const { data: repos } = await octokit.rest.repos.listForUser({
       username,
       sort: "stars",
-      per_page: limit
+      per_page: limit,
     });
 
-    return repos.map(repo => ({
-      id: repo.id,
-      name: repo.name,
-      stars: repo.stargazers_count
-    }));
+    return repos.map(
+      (repo: { id: number; name: string; stargazers_count: number }) => ({
+        id: repo.id,
+        name: repo.name,
+        stars: repo.stargazers_count,
+      }),
+    );
   } catch (error) {
     console.error(`Failed to fetch repositories for ${username}:`, error);
     return [];
