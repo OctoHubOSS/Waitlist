@@ -8,12 +8,12 @@ export default function SearchForm() {
   const [searchType, setSearchType] = useState("users"); // users, orgs, repos
   const [showFilters, setShowFilters] = useState(false);
   const router = useRouter();
-  
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       if (searchType === "users") {
-        router.push(`/${searchQuery.trim()}`);
+        router.push(`/user/${searchQuery.trim()}`);
       } else if (searchType === "orgs") {
         router.push(`/${searchQuery.trim()}`);
       } else {

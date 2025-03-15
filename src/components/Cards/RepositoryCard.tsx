@@ -10,7 +10,7 @@ function RepositoryCard({ repo }: RepoArray) {
   // Format repo size to KB, MB or GB as appropriate
   const formatSize = (sizeInKB?: number) => {
     if (!sizeInKB) return null;
-    
+
     if (sizeInKB < 1024) {
       return `${sizeInKB} KB`;
     } else if (sizeInKB < 1024 * 1024) {
@@ -22,7 +22,7 @@ function RepositoryCard({ repo }: RepoArray) {
 
   return (
     <a
-      href={'/repo/' + repo.repo}
+      href={"/repo/" + repo.repo}
       rel="noopener noreferrer"
       className="card card-hover glow-effect flex flex-col p-4 md:p-5 overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-github-accent/50 border border-github-border bg-github-dark-secondary rounded-lg"
     >
@@ -34,35 +34,37 @@ function RepositoryCard({ repo }: RepoArray) {
             <GoRepo className="h-3.5 w-3.5 mr-1.5" />
           )}
           <span className="text-xs">
-           {repo.owner ? `${repo.owner.login} /` : ""}
-          <span className="font-semibold text-github-link ml-1">{repo.name}</span>
+            {repo.owner ? `${repo.owner.login} /` : ""}
+            <span className="font-semibold text-github-link ml-1">
+              {repo.name}
+            </span>
           </span>
           <span className="ml-2 text-xs px-1.5 py-0.5 rounded border border-github-border">
             {repo.visibility || "public"}
           </span>
         </div>
-        
-        <h3 className="text-lg font-medium text-github-link">
-          {repo.name}
-        </h3>
+
+        <h3 className="text-lg font-medium text-github-link">{repo.name}</h3>
       </div>
 
       <p className="text-github-text-secondary text-sm mb-3 flex-grow line-clamp-2">
         {repo.description || "No description provided"}
       </p>
-      
+
       {repo.topics && repo.topics.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
           {repo.topics.slice(0, 4).map((topic, index) => (
-            <span 
-              key={index} 
+            <span
+              key={index}
               className="text-xs px-2 py-0.5 bg-github-accent/10 text-github-accent rounded-full"
             >
               {topic}
             </span>
           ))}
           {repo.topics.length > 4 && (
-            <span className="text-xs text-github-text-secondary">+{repo.topics.length - 4} more</span>
+            <span className="text-xs text-github-text-secondary">
+              +{repo.topics.length - 4} more
+            </span>
           )}
         </div>
       )}
@@ -70,7 +72,11 @@ function RepositoryCard({ repo }: RepoArray) {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-github-text-secondary mt-auto pt-2 border-t border-github-border/40">
         {repo.language && (
           <div className="flex items-center gap-1.5">
-            <LanguageIcon language={repo.language} size="sm" className="-mr-2" />
+            <LanguageIcon
+              language={repo.language}
+              size="sm"
+              className="-mr-2"
+            />
             <span className="text-xs whitespace-nowrap px-2 py-0.5">
               {repo.language}
             </span>
@@ -79,14 +85,14 @@ function RepositoryCard({ repo }: RepoArray) {
 
         <div className="flex items-center gap-1.5">
           <FaStar className="h-3.5 w-3.5 text-yellow-500" />
-          <span>{repo.stars.toLocaleString()}</span>
+          <span>{repo.stars}</span>
         </div>
 
         <div className="flex items-center gap-1.5">
           <FaCodeBranch className="h-3.5 w-3.5 text-blue-500" />
-          <span>{repo.forks.toLocaleString()}</span>
+          <span>{repo.forks}</span>
         </div>
-        
+
         {repo.size && (
           <div className="flex items-center gap-1.5">
             <FaDatabase className="h-3.5 w-3.5 text-purple-400" />
@@ -95,7 +101,7 @@ function RepositoryCard({ repo }: RepoArray) {
         )}
 
         <div className="flex items-center gap-1.5 sm:ml-auto">
-          <span>Updated {repo.updatedAt}</span>
+          <span>Last Updated On: {repo.updatedAt}</span>
         </div>
       </div>
     </a>
