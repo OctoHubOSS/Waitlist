@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { version } from "../../../package.json";
 
 export default function Footer() {
   return (
@@ -13,13 +14,18 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <Link href="/legal/privacy" className="text-sm sm:text-base hover:text-github-text transition-colors">
-                Privacy
+              <Link href="/changes" className="text-sm sm:text-base hover:text-github-text transition-colors">
+                Changes
               </Link>
             </li>
             <li>
               <Link href="/legal/terms" className="text-sm sm:text-base hover:text-github-text transition-colors">
-                Terms
+                Terms of Service
+              </Link>
+            </li>
+            <li>
+              <Link href="/legal/privacy" className="text-sm sm:text-base hover:text-github-text transition-colors">
+                Privacy Policy
               </Link>
             </li>
           </ul>
