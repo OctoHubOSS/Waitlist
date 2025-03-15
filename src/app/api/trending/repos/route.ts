@@ -68,12 +68,12 @@ export async function GET(req: NextRequest) {
         language: item.language || "",
         stars: item.stargazers_count,
         forks: item.forks_count,
-        updatedAt: new Date(item.updated_at).toLocaleDateString(),
+        updatedAt: new Date(item.updated_at).toLocaleString(),
         url: item.html_url,
         owner: {
-          login: item.owner.login,
-          avatar_url: item.owner.avatar_url,
-          url: item.owner.html_url
+          login: item.owner ? item.owner.login : 'unavailable',
+          avatar_url: item.owner ? item.owner.avatar_url : 'unavailable',
+          url: item.owner ? item.owner.html_url : 'unavailable'
         },
         createdAt: new Date(item.created_at).toLocaleDateString(),
         pushedAt: new Date(item.pushed_at).toLocaleDateString(),

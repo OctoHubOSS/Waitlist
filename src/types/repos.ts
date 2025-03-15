@@ -13,8 +13,8 @@ export interface BaseRepository {
   license?: {
     name: string;
     key?: string;
-    spdx_id?: string;
-    url?: string;
+    spdx_id?: string | null;
+    url?: string | null;
   } | null;
   visibility?: string;
   size: number;
