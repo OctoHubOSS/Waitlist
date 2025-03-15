@@ -20,8 +20,11 @@ export default async function DocPage({
     params: { slug?: string[] };
 }) {
     try {
+        // Await the params object before using its properties
+        const awaitedParams = await params;
+
         // Join slug parts to form the complete slug path
-        const fullSlug: any = params.slug?.join('/');
+        const fullSlug: any = awaitedParams.slug?.join('/');
 
         // Fetch the document
         const doc = await getDocBySlug(fullSlug);
