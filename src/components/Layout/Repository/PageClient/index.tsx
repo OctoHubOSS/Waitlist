@@ -40,7 +40,7 @@ export default function RepositoryPageClient({
       extractedOwner,
       extractedRepo,
       error: extractError,
-    } = extractRepoInfo(params.name, pathname);
+    } = extractRepoInfo(params.name || [], pathname);
 
     if (extractedOwner && extractedRepo) {
       setOwner(extractedOwner);

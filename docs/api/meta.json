@@ -1,24 +1,17 @@
 {
-    "title": "API Reference",
-    "description": "Comprehensive documentation for OctoSearch API endpoints",
-    "defaultOpen": false,
-    "icon": "Code",
-    "pages": [
-        "overview",
-        "repository",
-        "repository-contents",
-        "repository-languages",
-        "repository-branches",
-        "repository-commits",
-        "repository-issues",
-        "repository-changelog",
-        "user-repositories",
-        "user-starred",
-        "search-users",
-        "search-code",
-        "trending-repositories",
-        "trending-developers",
-        "gists",
-        "rate-limit"
-    ]
+  "title": "API Reference",
+  "description": "Comprehensive documentation for OctoSearch API endpoints",
+  "defaultOpen": false,
+  "icon": "Code",
+  "pages": [
+    "overview",
+    "repository",
+    "repository-contents",
+    "repository-languages",
+    "repository-branches",
+    "repository-commits",
+    "repository-issues",
+    "repository-changelog",
+    "user-repositories"
+  ]
 }

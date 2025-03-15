@@ -26,8 +26,11 @@ export default function Navigation() {
   };
 
   return (
-    <header className="z-10 mb-4 flex w-full min-w-screen items-center justify-between overflow-hidden border-b border-github-border py-5">
-      <Link className="z-10 flex shrink-0 items-center gap-2 text-xl font-bold" href="/">
+    <header className="z-10 flex w-full min-w-screen items-center justify-between overflow-hidden border-b border-github-border py-5">
+      <Link
+        className="z-10 flex shrink-0 items-center gap-2 text-xl font-bold"
+        href="/"
+      >
         <div className="relative h-8 w-8 sm:h-10 sm:w-10">
           <Image
             alt="OctoSearch Logo"
@@ -37,9 +40,7 @@ export default function Navigation() {
             src="/logo.webp"
           />
         </div>
-        <span>
-          OctoSearch
-        </span>
+        <span>OctoSearch</span>
       </Link>
 
       {/* Mobile menu button */}
@@ -49,7 +50,11 @@ export default function Navigation() {
         onClick={toggleMobileMenu}
         type="button"
       >
-        {mobileMenuOpen ? <FaTimes className="h-6 w-6" /> : <FaBars className="h-6 w-6" />}
+        {mobileMenuOpen ? (
+          <FaTimes className="h-6 w-6" />
+        ) : (
+          <FaBars className="h-6 w-6" />
+        )}
       </button>
 
       {/* Desktop Navigation */}
