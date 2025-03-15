@@ -43,7 +43,7 @@ export default function AboutLayout({ children }: AboutLayoutProps) {
       </div>
 
       {/* Content Section */}
-      <div className="max-w-4xl mx-auto py-12 prose dark:prose-invert max-w-none">
+      <div className="mx-auto py-12 prose dark:prose-invert max-w-none">
         {children}
       </div>
     </div>

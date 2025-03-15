@@ -1,0 +1,10 @@
+{
+    "title": "Getting Started",
+    "description": "Introduction to OctoSearch and basic usage guides",
+    "defaultOpen": true,
+    "icon": "Book",
+    "pages": [
+        "introduction",
+        "quick-start"
+    ]
+}

@@ -26,7 +26,7 @@ export default function Navigation() {
   };
 
   return (
-    <header className="z-10 mb-4 flex w-full items-center justify-between overflow-hidden border-b border-github-border py-5">
+    <header className="z-10 mb-4 flex w-full min-w-screen items-center justify-between overflow-hidden border-b border-github-border py-5">
       <Link className="z-10 flex shrink-0 items-center gap-2 text-xl font-bold" href="/">
         <div className="relative h-8 w-8 sm:h-10 sm:w-10">
           <Image

@@ -15,7 +15,7 @@ OctoSearch is a modern web application that allows users to search and explore G
 
 ## Tech Stack
 
-- **Next.js 14** - React framework with server components
+- **Next.js Canary** - React framework with server components
 - **TypeScript** - Type-safe JavaScript
 - **Tailwind CSS** - Utility-first CSS framework
 - **Framer Motion** - Animations and transitions

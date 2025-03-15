@@ -64,12 +64,6 @@ function UserCard({ user }: UserArray) {
               <span>{user.company}</span>
             </div>
           )}
-          {user.location && (
-            <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-github-dark/60 text-github-text-secondary hover:bg-github-dark/80 transition-colors">
-              <FaMapMarkerAlt className="h-3 w-3 text-neon-cyan" />
-              <span>{user.location}</span>
-            </div>
-          )}
         </div>
 
         {/* User's top repositories */}

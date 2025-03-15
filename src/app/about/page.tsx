@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import AboutLayout from "@/components/Layout/About";
-import { FeaturesList } from "@/components/Features/FeaturesList";
+import FeaturesList from "@/components/Features/FeaturesList";
 import { FaSearch, FaLightbulb, FaCode, FaHeart } from "react-icons/fa";
 
 export const metadata: Metadata = {
