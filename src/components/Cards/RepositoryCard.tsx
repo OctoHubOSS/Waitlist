@@ -24,7 +24,7 @@ function RepositoryCard({ repo }: RepoArray) {
     <a
       href={"/repo/" + repo.repo}
       rel="noopener noreferrer"
-      className="card card-hover glow-effect flex flex-col p-4 md:p-5 overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-github-accent/50 border border-github-border bg-github-dark-secondary rounded-lg"
+      className="h-full card card-hover glow-effect flex flex-col p-4 md:p-5 overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-github-accent/50 border border-github-border bg-github-dark-secondary rounded-lg"
     >
       <div className="flex flex-col gap-1 mb-2">
         <div className="flex items-center text-github-text-secondary mb-1">
@@ -51,7 +51,7 @@ function RepositoryCard({ repo }: RepoArray) {
         {repo.description || "No description provided"}
       </p>
 
-      {repo.topics && repo.topics.length > 0 && (
+      {repo.topics && repo.topics.length > 0 ? (
         <div className="flex flex-wrap gap-2 mb-3">
           {repo.topics.slice(0, 4).map((topic, index) => (
             <span
@@ -67,6 +67,8 @@ function RepositoryCard({ repo }: RepoArray) {
             </span>
           )}
         </div>
+      ) : (
+        <div className="mb-8" />
       )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-github-text-secondary mt-auto pt-2 border-t border-github-border/40">

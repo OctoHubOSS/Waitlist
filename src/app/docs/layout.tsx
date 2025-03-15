@@ -108,13 +108,13 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
   // Filter navigation based on search query
   const filteredCategories = searchQuery
     ? categories
-        .map((category) => ({
-          ...category,
-          pages: category.pages.filter((page) =>
-            page.title.toLowerCase().includes(searchQuery.toLowerCase()),
-          ),
-        }))
-        .filter((category) => category.pages.length > 0)
+      .map((category) => ({
+        ...category,
+        pages: category.pages.filter((page) =>
+          page.title.toLowerCase().includes(searchQuery.toLowerCase()),
+        ),
+      }))
+      .filter((category) => category.pages.length > 0)
     : categories;
 
   return (
@@ -207,10 +207,9 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
                               href={`/docs/${page.slug}`}
                               className={`
                                 flex items-center px-3 py-2 text-sm rounded-md transition-colors
-                                ${
-                                  isActive
-                                    ? "bg-github-accent/10 text-github-accent border-l-2 border-github-accent -ml-[2px]"
-                                    : "text-gray-300 hover:text-white hover:bg-gray-800"
+                                ${isActive
+                                  ? "bg-github-accent/10 text-github-accent border-l-2 border-github-accent -ml-[2px]"
+                                  : "text-gray-300 hover:text-white hover:bg-gray-800"
                                 }
                               `}
                               onClick={() => setSidebarOpen(false)}

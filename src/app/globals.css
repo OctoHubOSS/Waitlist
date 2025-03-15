@@ -12,6 +12,11 @@ body {
   @apply bg-github-dark text-github-text;
 }
 
+.docs-body {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center rounded-md border border-github-border px-4 py-2 text-sm font-medium shadow-sm transition-all hover:bg-github-accent hover:text-white focus:outline-none focus:ring-2 focus:ring-github-accent focus:ring-offset-2 focus:ring-offset-github-dark;

@@ -13,22 +13,6 @@ export default function Footer() {
           <ul className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             <li>
               <Link
-                href="/about"
-                className="text-sm sm:text-base hover:text-github-text transition-colors"
-              >
-                About
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/changes"
-                className="text-sm sm:text-base hover:text-github-text transition-colors"
-              >
-                Changes
-              </Link>
-            </li>
-            <li>
-              <Link
                 href="/legal/terms"
                 className="text-sm sm:text-base hover:text-github-text transition-colors"
               >
@@ -45,10 +29,10 @@ export default function Footer() {
             </li>
             <li>
               <Link
-                href="/docs"
+                href="/legal/security"
                 className="text-sm sm:text-base hover:text-github-text transition-colors"
               >
-                Documentation
+                Security
               </Link>
             </li>
           </ul>

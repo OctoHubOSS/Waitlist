@@ -139,8 +139,12 @@ export async function fetchFileContent(
 /**
  * Hook for fetching trending developers
  */
-export function useTrendingDevelopers(since: 'daily' | 'weekly' | 'monthly' = 'daily', config?: SWRConfiguration) {
-    const cacheKey = `/api/trending/devs?since=${since}`;
+export function useTrendingDevelopers(
+    since: 'daily' | 'weekly' | 'monthly' = 'daily',
+    page: number = 1,
+    config?: SWRConfiguration
+) {
+    const cacheKey = `/api/trending/devs?since=${since}&page=${page}`;
 
     return useSWR(
         cacheKey,
@@ -152,16 +156,26 @@ export function useTrendingDevelopers(since: 'daily' | 'weekly' | 'monthly' = 'd
 /**
  * Prefetch trending developers data
  */
-export function prefetchTrendingDevelopers(since: 'daily' | 'weekly' | 'monthly' = 'daily') {
-    const cacheKey = `/api/trending/devs?since=${since}`;
+export function prefetchTrendingDevelopers(
+    since: 'daily' | 'weekly' | 'monthly' = 'daily',
+    page: number = 1
+) {
+    const cacheKey = `/api/trending/devs?since=${since}&page=${page}`;
     return mutate(cacheKey, fetcher(cacheKey), false);
 }
 
 /**
  * Hook for fetching trending repositories
  */
-export function useTrendingRepositories(config?: SWRConfiguration) {
-    const cacheKey = `/api/trending/repos`;
+export function useTrendingRepositories(
+    since: 'daily' | 'weekly' | 'monthly' = 'daily',
+    language?: string,
+    page: number = 1,
+    stars?: number,
+    forks?: number,
+    config?: SWRConfiguration
+) {
+    const cacheKey = `/api/trending/repos?since=${since}&language=${language || ''}&page=${page}&stars=${stars || ''}&forks=${forks || ''}`;
 
     return useSWR(
         cacheKey,
@@ -173,7 +187,13 @@ export function useTrendingRepositories(config?: SWRConfiguration) {
 /**
  * Prefetch trending repositories data
  */
-export function prefetchTrendingRepositories() {
-    const cacheKey = `/api/trending/repos`;
+export function prefetchTrendingRepositories(
+    since: 'daily' | 'weekly' | 'monthly' = 'daily',
+    language?: string,
+    page: number = 1,
+    stars?: number,
+    forks?: number
+) {
+    const cacheKey = `/api/trending/repos?since=${since}&language=${language || ''}&page=${page}&stars=${stars || ''}&forks=${forks || ''}`;
     return mutate(cacheKey, fetcher(cacheKey), false);
 }

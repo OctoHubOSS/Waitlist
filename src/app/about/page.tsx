@@ -14,7 +14,7 @@ export default function AboutPage() {
 
   return (
     <AboutLayout>
-      <article className="space-y-12">
+      <article className="space-y-12 ">
         {/* Hero Section */}
         <section className="relative p-6 md:p-10 rounded-2xl bg-github-dark-secondary border border-github-border overflow-hidden glow-effect">
           <h1 className="text-3xl md:text-4xl font-bold mb-6 text-white">

@@ -21,7 +21,7 @@ export default function HeroSection({ title, description }: HeroSectionProps) {
 
   return (
     <motion.section
-      className="text-center w-full mb-12 md:mb-16"
+      className="text-center w-full mb-24"
       initial="hidden"
       animate="visible"
       variants={heroVariants}

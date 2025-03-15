@@ -1,0 +1,170 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+// NextAuth Models
+model Account {
+    id                String  @id @default(cuid())
+    userId            String
+    type              String
+    provider          String
+    providerAccountId String
+    refresh_token     String? @db.Text
+    access_token      String? @db.Text
+    expires_at        Int?
+    token_type        String?
+    scope             String?
+    id_token          String? @db.Text
+    session_state     String?
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([provider, providerAccountId])
+}
+
+model Session {
+    id           String   @id @default(cuid())
+    sessionToken String   @unique
+    userId       String
+    expires      DateTime
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+    id             String           @id @default(cuid())
+    name           String?
+    email          String?          @unique
+    emailVerified  DateTime?
+    image          String?
+    accounts       Account[]
+    sessions       Session[]
+    SearchQuery    SearchQuery[]
+    UserRepository UserRepository[]
+}
+
+model VerificationToken {
+    identifier String
+    token      String   @unique
+    expires    DateTime
+
+    @@unique([identifier, token])
+}
+
+model Repository {
+    id              String           @id @default(cuid())
+    githubId        Int              @unique
+    name            String
+    fullName        String           @unique // owner/repo format
+    description     String?          @db.Text
+    url             String
+    homepage        String?
+    language        String?
+    size            Int
+    stargazersCount Int              @default(0)
+    forksCount      Int              @default(0)
+    watchersCount   Int              @default(0)
+    openIssuesCount Int              @default(0)
+    archived        Boolean          @default(false)
+    disabled        Boolean          @default(false)
+    visibility      String           @default("public")
+    defaultBranch   String           @default("main")
+    license         String?
+    topics          Topic[]
+    owner           Owner            @relation(fields: [ownerId], references: [id])
+    ownerId         String
+    searchResults   SearchResult[]
+    userSaves       UserRepository[]
+
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
+    deletedAt    DateTime?
+    lastSyncedAt DateTime?
+}
+
+model Owner {
+    id           String       @id @default(cuid())
+    githubId     Int          @unique
+    login        String       @unique
+    type         OwnerType    @default(USER)
+    name         String?
+    avatarUrl    String?
+    url          String
+    htmlUrl      String
+    description  String?      @db.Text
+    repositories Repository[]
+
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
+    deletedAt    DateTime?
+    lastSyncedAt DateTime?
+}
+
+enum OwnerType {
+    USER
+    ORGANIZATION
+}
+
+model Topic {
+    id           String       @id @default(cuid())
+    name         String       @unique
+    description  String?      @db.Text
+    repositories Repository[]
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+}
+
+model SearchQuery {
+    id            String         @id @default(cuid())
+    query         String
+    user          User?          @relation(fields: [userId], references: [id])
+    userId        String?
+    searchResults SearchResult[]
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @default(now())
+    deletedAt DateTime?
+}
+
+model SearchResult {
+    id             String      @id @default(cuid())
+    searchQuery    SearchQuery @relation(fields: [searchQueryId], references: [id])
+    searchQueryId  String
+    repository     Repository  @relation(fields: [repositoryId], references: [id])
+    repositoryId   String
+    rank           Int
+    relevanceScore Float
+
+    createdAt DateTime @default(now())
+}
+
+model UserRepository {
+    id           String     @id @default(cuid())
+    user         User       @relation(fields: [userId], references: [id])
+    userId       String
+    repository   Repository @relation(fields: [repositoryId], references: [id])
+    repositoryId String
+    isFavorite   Boolean    @default(false)
+    notes        String?    @db.Text
+    tags         String?
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+
+    @@unique([userId, repositoryId])
+}
+
+enum Role {
+    USER
+    ADMIN
+}

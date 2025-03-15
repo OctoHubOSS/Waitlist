@@ -37,6 +37,11 @@ export interface Repository extends BaseRepository {
   forks: number;
   openIssues: number;
   pushedAt: string;
+  createdAt: string;
+  stargazers_count: number;
+  created_at: string;
+  pushed_at: string;
+  updated_at: string;
 }
 
 export interface RawData extends BaseRepository {

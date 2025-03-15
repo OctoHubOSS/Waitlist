@@ -33,11 +33,13 @@ export default function TermsPage() {
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed mb-4">
                         OctoSearch provides a code search interface that uses the GitHub API to enable users to search through repositories.
+                        The service includes features for saving preferences, tracking search history, and managing favorite repositories.
                         The service is provided "as is" and may change without notice.
                     </p>
                     <p className="text-github-text leading-relaxed">
-                        OctoSearch does not store or process any GitHub data on its servers. All data displayed is retrieved in real-time from
-                        GitHub's API and is subject to GitHub's rate limiting, availability, and terms of service.
+                        OctoSearch stores certain data on its servers to provide personalized features, including user profiles, search queries,
+                        and repository information retrieved from GitHub's API. This data is subject to GitHub's rate limiting, availability,
+                        and terms of service as well as our own Privacy Policy.
                     </p>
                 </div>
             </section>
@@ -63,6 +65,10 @@ export default function TermsPage() {
                         <li className="flex items-start">
                             <span className="text-github-accent mr-2">•</span>
                             <span>We cannot guarantee the accuracy or availability of data provided by GitHub's API</span>
+                        </li>
+                        <li className="flex items-start">
+                            <span className="text-github-accent mr-2">•</span>
+                            <span>We may store GitHub data and user interactions within our service for functionality purposes</span>
                         </li>
                     </ul>
                 </div>
@@ -105,6 +111,10 @@ export default function TermsPage() {
                         <span className="text-github-accent mr-2">•</span>
                         <span>Use any robot, spider, or other automatic device to access the service</span>
                     </li>
+                    <li className="flex items-start">
+                        <span className="text-github-accent mr-2">•</span>
+                        <span>Submit content that is offensive, harmful, or violates the rights of others</span>
+                    </li>
                 </ul>
                 <p className="text-github-text leading-relaxed bg-github-dark-secondary/30 p-5 rounded-md">
                     We reserve the right to terminate your access to OctoSearch for violations of these conduct guidelines, at our sole discretion.
@@ -130,10 +140,31 @@ export default function TermsPage() {
                 </div>
             </section>
 
-            {/* Section 6 */}
+            {/* Section 6 - User Data */}
+            <section className="mb-12">
+                <h2 id="user-data" className="text-2xl font-bold text-github-link mb-5 pb-2 border-b border-github-border">
+                    6. User Data
+                </h2>
+                <div className="bg-github-dark-secondary/30 p-5 rounded-md">
+                    <p className="text-github-text leading-relaxed mb-4">
+                        By using OctoSearch, you acknowledge that certain information about you and your activities will be collected and stored
+                        by our service. This includes account information, search history, saved repositories, user preferences, and other interactions.
+                    </p>
+                    <p className="text-github-text leading-relaxed mb-4">
+                        You retain ownership of any content you directly submit to OctoSearch (such as notes or tags on repositories). However,
+                        by submitting such content, you grant us a worldwide, non-exclusive, royalty-free license to use, store, and display that
+                        content in connection with providing our service.
+                    </p>
+                    <p className="text-github-text leading-relaxed">
+                        For more information about how we handle your data, please see our <a href="/legal/privacy" className="text-github-link hover:text-github-link-hover underline underline-offset-2">Privacy Policy</a>.
+                    </p>
+                </div>
+            </section>
+
+            {/* Section 7 (previously 6) */}
             <section className="mb-12">
                 <h2 id="service-limitations" className="text-2xl font-bold text-github-link mb-5 pb-2 border-b border-github-border">
-                    6. Service Limitations
+                    7. Service Limitations
                 </h2>
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed mb-4">
@@ -148,10 +179,10 @@ export default function TermsPage() {
                 </div>
             </section>
 
-            {/* Section 7 */}
+            {/* Section 8 (previously 7) */}
             <section className="mb-12">
                 <h2 id="disclaimer" className="text-2xl font-bold text-github-link mb-5 pb-2 border-b border-github-border">
-                    7. Disclaimer
+                    8. Disclaimer
                 </h2>
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed mb-4">
@@ -165,10 +196,10 @@ export default function TermsPage() {
                 </div>
             </section>
 
-            {/* Section 8 - New Limitation of Liability */}
+            {/* Section 9 (previously 8) */}
             <section className="mb-12">
                 <h2 id="limitation-of-liability" className="text-2xl font-bold text-github-link mb-5 pb-2 border-b border-github-border">
-                    8. Limitation of Liability
+                    9. Limitation of Liability
                 </h2>
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed mb-4">
@@ -184,10 +215,10 @@ export default function TermsPage() {
                 </div>
             </section>
 
-            {/* Section 9 - New Indemnification */}
+            {/* Section 10 (previously 9) */}
             <section className="mb-12">
                 <h2 id="indemnification" className="text-2xl font-bold text-github-link mb-5 pb-2 border-b border-github-border">
-                    9. Indemnification
+                    10. Indemnification
                 </h2>
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed">
@@ -199,10 +230,10 @@ export default function TermsPage() {
                 </div>
             </section>
 
-            {/* Section 10 - New Governing Law */}
+            {/* Section 11 (previously 10) */}
             <section className="mb-12">
                 <h2 id="governing-law" className="text-2xl font-bold text-github-link mb-5 pb-2 border-b border-github-border">
-                    10. Governing Law
+                    11. Governing Law
                 </h2>
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed mb-4">
@@ -216,10 +247,10 @@ export default function TermsPage() {
                 </div>
             </section>
 
-            {/* Section 11 - Changes to Terms (moved from Section 8) */}
+            {/* Section 12 (previously 11) */}
             <section className="mb-12">
                 <h2 id="changes-to-terms" className="text-2xl font-bold text-github-link mb-5 pb-2 border-b border-github-border">
-                    11. Changes to Terms
+                    12. Changes to Terms
                 </h2>
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed mb-4">
@@ -233,10 +264,10 @@ export default function TermsPage() {
                 </div>
             </section>
 
-            {/* Section 12 - New Contact Information */}
+            {/* Section 13 (previously 12) */}
             <section className="mb-6">
                 <h2 id="contact-information" className="text-2xl font-bold text-github-link mb-5 pb-2 border-b border-github-border">
-                    12. Contact Information
+                    13. Contact Information
                 </h2>
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed">

@@ -5,5 +5,6 @@
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
-  }
+  },
+  "WillLuke.nextjs.hasPrompted": true
 }

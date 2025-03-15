@@ -133,7 +133,7 @@ function UserPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="w-full p-6"
+      className="w-full p-6 px-4 md:px-6 lg:px-8"
     >
       <div className="card mb-8 p-6 bg-github-dark rounded-lg shadow-lg">
         <div className="flex flex-col md:flex-row md:items-start gap-6">

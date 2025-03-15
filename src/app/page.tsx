@@ -4,7 +4,7 @@ import { HeroSection, TrendingDevs, TrendingRepos } from "@/components/Layout/Ho
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full mt-20 px-4 md:px-6 lg:px-8">
       <HeroSection
         title="Discover the GitHub Universe"
         description="Find developers, organizations, and repositories with OctoSearch's powerful discovery platform."

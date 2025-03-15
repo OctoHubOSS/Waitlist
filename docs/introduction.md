@@ -1,5 +1,5 @@
 ---
-title: Introduction to OctoSearch
+title: Introduction
 description: Learn about OctoSearch and how it can help you discover GitHub resources.
 category: Getting Started
 order: 1
