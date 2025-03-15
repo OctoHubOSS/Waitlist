@@ -4,7 +4,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { FaBars, FaGithub, FaTimes, FaUser, FaSignOutAlt, FaCog, FaChevronDown } from "react-icons/fa";
+import {
+  FaBars,
+  FaGithub,
+  FaTimes,
+  FaUser,
+  FaSignOutAlt,
+  FaCog,
+  FaChevronDown,
+} from "react-icons/fa";
 import { useSession } from "next-auth/react";
 
 // Navigation link structures for easy maintenance
@@ -21,7 +29,7 @@ const docsLinks = [
 
 const extrasLinks = [
   { name: "About Us", href: "/about" },
-  { name: "Changelogs", href: "/changes" }
+  { name: "Changelogs", href: "/changes" },
 ];
 
 const legalLinks = [
@@ -38,20 +46,29 @@ type DropdownProps = {
   onLinkClick?: () => void;
 };
 
-const NavDropdown = ({ isOpen, toggle, title, links, onLinkClick }: DropdownProps) => {
+const NavDropdown = ({
+  isOpen,
+  toggle,
+  title,
+  links,
+  onLinkClick,
+}: DropdownProps) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         if (isOpen) toggle();
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, toggle]);
 
@@ -63,7 +80,9 @@ const NavDropdown = ({ isOpen, toggle, title, links, onLinkClick }: DropdownProp
         aria-expanded={isOpen}
       >
         {title}
-        <FaChevronDown className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <FaChevronDown
+          className={`h-3 w-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
       </button>
 
       {isOpen && (
@@ -115,14 +134,17 @@ export default function Navigation() {
   // Close user dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+      if (
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(event.target as Node)
+      ) {
         setUserDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -140,7 +162,7 @@ export default function Navigation() {
   };
 
   return (
-    <header className="z-10 flex w-full min-w-screen items-center justify-between overflow-visible border-b border-github-border py-5 px-4">
+    <header className="z-10 flex w-full min-w-screen items-center justify-between overflow-visible border-b border-github-border py-5 px-4 bg-github-dark">
       <Link
         className="z-10 flex shrink-0 items-center gap-2 text-xl font-bold"
         href="/"
@@ -234,12 +256,16 @@ export default function Navigation() {
               {userDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-56 z-20 origin-top-right rounded-md bg-github-dark shadow-lg ring-1 ring-github-border border border-github-border overflow-hidden">
                   <div className="p-2 border-b border-github-border">
-                    <p className="text-sm font-semibold">{session?.user?.name}</p>
-                    <p className="text-xs text-github-text-secondary">{session?.user?.email}</p>
+                    <p className="text-sm font-semibold">
+                      {session?.user?.name}
+                    </p>
+                    <p className="text-xs text-github-text-secondary">
+                      {session?.user?.email}
+                    </p>
                   </div>
                   <div className="py-1">
                     <Link
-                      href="/profile"
+                      href={`/user/${session?.user?.name}`}
                       className="flex items-center px-4 py-2 text-sm text-github-text-secondary hover:bg-github-btn-hover"
                       onClick={() => setUserDropdownOpen(false)}
                     >
@@ -295,7 +321,9 @@ export default function Navigation() {
               ))}
 
               <li className="w-full border-t border-github-border pt-4 mt-2">
-                <p className="px-4 text-sm font-medium text-github-text-secondary uppercase">Documentation</p>
+                <p className="px-4 text-sm font-medium text-github-text-secondary uppercase">
+                  Documentation
+                </p>
                 <ul className="mt-2">
                   {docsLinks.map((link) => (
                     <li key={link.href}>
@@ -312,7 +340,9 @@ export default function Navigation() {
               </li>
 
               <li className="w-full border-t border-github-border pt-4">
-                <p className="px-4 text-sm font-medium text-github-text-secondary uppercase">Extras</p>
+                <p className="px-4 text-sm font-medium text-github-text-secondary uppercase">
+                  Extras
+                </p>
                 <ul className="mt-2">
                   {extrasLinks.map((link) => (
                     <li key={link.href}>
@@ -329,7 +359,9 @@ export default function Navigation() {
               </li>
 
               <li className="w-full border-t border-github-border pt-4">
-                <p className="px-4 text-sm font-medium text-github-text-secondary uppercase">Legal</p>
+                <p className="px-4 text-sm font-medium text-github-text-secondary uppercase">
+                  Legal
+                </p>
                 <ul className="mt-2">
                   {legalLinks.map((link) => (
                     <li key={link.href}>
@@ -349,7 +381,9 @@ export default function Navigation() {
                 <li className="w-full border-t border-github-border pt-5 mt-2">
                   <div className="flex items-center gap-3 mb-4 px-4">
                     <Image
-                      src={session?.user?.image || "https://github.com/github.png"}
+                      src={
+                        session?.user?.image || "https://github.com/github.png"
+                      }
                       alt="User Avatar"
                       width={40}
                       height={40}
@@ -357,13 +391,15 @@ export default function Navigation() {
                     />
                     <div className="text-left">
                       <p className="font-medium">{session?.user?.name}</p>
-                      <p className="text-sm text-github-text-secondary">{session?.user?.email}</p>
+                      <p className="text-sm text-github-text-secondary">
+                        {session?.user?.email}
+                      </p>
                     </div>
                   </div>
 
                   <Link
                     className="flex w-full items-center rounded-md px-4 py-2 text-github-text-secondary transition-colors hover:text-github-text"
-                    href="/profile"
+                    href={`/user/${session?.user?.name}`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <FaUser className="mr-2 h-4 w-4" />

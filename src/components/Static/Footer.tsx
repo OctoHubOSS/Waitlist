@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { version } from "../../../package.json";
+import { FaGithub } from "react-icons/fa";
 
 export default function Footer() {
   return (
@@ -34,6 +35,14 @@ export default function Footer() {
               >
                 Security
               </Link>
+            </li>
+            <li>
+              <a
+                href="https://github.com/git-logs/Octosearch"
+                className="btn btn-primary flex items-center gap-2"
+              >
+                Find Us On: <FaGithub />
+              </a>
             </li>
           </ul>
         </div>

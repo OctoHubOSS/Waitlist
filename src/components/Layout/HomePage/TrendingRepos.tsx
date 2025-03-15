@@ -11,17 +11,30 @@ type TimePeriod = "daily" | "weekly" | "monthly";
 export default function TrendingRepositories() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("daily");
   const [language, setLanguage] = useState<string>("");
+  const [spokenLanguage, setSpokenLanguage] = useState<string>("");
   const [page, setPage] = useState<number>(1);
   const [stars, setStars] = useState<number>(0);
   const [forks, setForks] = useState<number>(0);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
-  // Replace useEffect/useState fetch with SWR hook including time period
-  const { data: trendingRepos, error, isLoading } = useTrendingRepositories(timePeriod, language, page, stars, forks);
+  const {
+    data: trendingRepos,
+    error,
+    isLoading,
+  } = useTrendingRepositories(
+    timePeriod,
+    language,
+    page,
+    stars,
+    forks,
+    spokenLanguage,
+  );
 
   // Use only up to 6 repositories for display
-  const displayRepos = Array.isArray(trendingRepos?.data) ? trendingRepos.data.slice(0, 6) : [];
+  const displayRepos = Array.isArray(trendingRepos?.data)
+    ? trendingRepos.data.slice(0, 6)
+    : [];
 
   // Framer Motion variants remain the same
   const containerVariants = {
@@ -62,8 +75,17 @@ export default function TrendingRepositories() {
   };
 
   // Handle language change
-  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleLanguageChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
     setLanguage(event.target.value);
+  };
+
+  // Handle spoken language change
+  const handleSpokenLanguageChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    setSpokenLanguage(event.target.value);
   };
 
   // Handle page change
@@ -84,7 +106,10 @@ export default function TrendingRepositories() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(event.target as Node)
+      ) {
         setShowSettings(false);
       }
     };
@@ -103,7 +128,9 @@ export default function TrendingRepositories() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.6 }}
       >
-        <h2 className="text-xl md:text-2xl font-semibold mb-4 sm:mb-0">Trending Repositories</h2>
+        <h2 className="text-xl md:text-2xl font-semibold mb-4 sm:mb-0">
+          Trending Repositories
+        </h2>
 
         <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto relative">
           <button
@@ -115,13 +142,18 @@ export default function TrendingRepositories() {
           </button>
 
           {showSettings && (
-            <div ref={settingsRef} className="absolute right-0 top-full mt-2 w-64 bg-github-dark border border-github-border rounded-md shadow-lg z-10">
+            <div
+              ref={settingsRef}
+              className="absolute right-0 top-full mt-2 w-72 bg-github-dark border border-github-border rounded-md shadow-lg z-10"
+            >
               <div className="p-4">
                 <label className="block mb-2">
                   <span className="text-sm">Time Period:</span>
                   <select
                     value={timePeriod}
-                    onChange={(e) => handleTimePeriodChange(e.target.value as TimePeriod)}
+                    onChange={(e) =>
+                      handleTimePeriodChange(e.target.value as TimePeriod)
+                    }
                     className="mt-1 block w-full px-3 py-2 text-sm rounded-md bg-github-dark-secondary text-github-text-primary"
                   >
                     <option value="daily">Today</option>
@@ -130,7 +162,7 @@ export default function TrendingRepositories() {
                   </select>
                 </label>
                 <label className="block mb-2">
-                  <span className="text-sm">Language:</span>
+                  <span className="text-sm">Programming Language:</span>
                   <select
                     value={language}
                     onChange={handleLanguageChange}
@@ -138,14 +170,73 @@ export default function TrendingRepositories() {
                   >
                     <option value="">All</option>
                     <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
                     <option value="python">Python</option>
                     <option value="java">Java</option>
-                    <option value="typescript">TypeScript</option>
                     <option value="ruby">Ruby</option>
                     <option value="go">Go</option>
                     <option value="csharp">C#</option>
                     <option value="php">PHP</option>
                     <option value="cpp">C++</option>
+                    <option value="c">C</option>
+                    <option value="swift">Swift</option>
+                    <option value="kotlin">Kotlin</option>
+                    <option value="rust">Rust</option>
+                    <option value="dart">Dart</option>
+                    <option value="scala">Scala</option>
+                    <option value="objective-c">Objective-C</option>
+                    <option value="shell">Shell</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                    <option value="vue">Vue</option>
+                    <option value="react">React</option>
+                    <option value="angular">Angular</option>
+                    <option value="jupyter">Jupyter Notebook</option>
+                    <option value="r">R</option>
+                    <option value="assembly">Assembly</option>
+                    <option value="perl">Perl</option>
+                    <option value="lua">Lua</option>
+                    <option value="haskell">Haskell</option>
+                    <option value="elixir">Elixir</option>
+                  </select>
+                </label>
+                <label className="block mb-2">
+                  <span className="text-sm">Spoken Language:</span>
+                  <select
+                    value={spokenLanguage}
+                    onChange={handleSpokenLanguageChange}
+                    className="mt-1 block w-full px-3 py-2 text-sm rounded-md bg-github-dark-secondary text-github-text-primary"
+                  >
+                    <option value="">All</option>
+                    <option value="en">English</option>
+                    <option value="zh">Chinese</option>
+                    <option value="es">Spanish</option>
+                    <option value="ar">Arabic</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="ru">Russian</option>
+                    <option value="ja">Japanese</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="ko">Korean</option>
+                    <option value="it">Italian</option>
+                    <option value="hi">Hindi</option>
+                    <option value="tr">Turkish</option>
+                    <option value="nl">Dutch</option>
+                    <option value="pl">Polish</option>
+                    <option value="sv">Swedish</option>
+                    <option value="vi">Vietnamese</option>
+                    <option value="th">Thai</option>
+                    <option value="fa">Persian</option>
+                    <option value="id">Indonesian</option>
+                    <option value="uk">Ukrainian</option>
+                    <option value="cs">Czech</option>
+                    <option value="no">Norwegian</option>
+                    <option value="fi">Finnish</option>
+                    <option value="el">Greek</option>
+                    <option value="ro">Romanian</option>
+                    <option value="he">Hebrew</option>
+                    <option value="hu">Hungarian</option>
+                    <option value="da">Danish</option>
                   </select>
                 </label>
                 <label className="block mb-2">
@@ -180,15 +271,18 @@ export default function TrendingRepositories() {
                 </label>
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="mt-4 w-full px-4 py-2 bg-github-accent text-white rounded-md"
+                  className="mt-4 w-full px-4 py-2 bg-github-accent text-white rounded-md hover:bg-github-accent-hover transition-colors"
                 >
-                  Close
+                  Apply & Close
                 </button>
               </div>
             </div>
           )}
 
-          <Link href={`/trending?since=${timePeriod}`} className="flex items-center text-github-accent hover:text-github-accent-hover text-sm md:text-base font-medium ml-4">
+          <Link
+            href={`/trending?since=${timePeriod}${language ? `&language=${language}` : ""}${spokenLanguage ? `&spoken_language_code=${spokenLanguage}` : ""}`}
+            className="flex items-center text-github-accent hover:text-github-accent-hover text-sm md:text-base font-medium ml-4"
+          >
             <motion.span
               initial={{ x: 0 }}
               whileHover={{ x: 4 }}
@@ -226,7 +320,9 @@ export default function TrendingRepositories() {
         </motion.div>
       ) : error ? (
         <div className="text-center py-8">
-          <p className="text-github-text-secondary">Failed to load trending repositories</p>
+          <p className="text-github-text-secondary">
+            Failed to load trending repositories
+          </p>
         </div>
       ) : (
         <motion.div
@@ -248,7 +344,9 @@ export default function TrendingRepositories() {
             ))
           ) : (
             <div className="col-span-full text-center py-8">
-              <p className="text-github-text-secondary">No trending repositories found</p>
+              <p className="text-github-text-secondary">
+                No trending repositories found
+              </p>
             </div>
           )}
         </motion.div>
