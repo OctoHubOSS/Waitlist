@@ -13,8 +13,9 @@ const emailRequestSchema = z.object({
 
 export async function POST(req: NextRequest) {
     try {
-        // Get current session and ensure user is authenticated with admin privileges
+
         const session = await getSession();
+
         if (!session?.user?.id) {
             return NextResponse.json(
                 { error: "Authentication required" },

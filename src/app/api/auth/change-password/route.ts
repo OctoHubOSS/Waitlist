@@ -1,35 +1,33 @@
-import { NextResponse, NextRequest } from "next/server";
-import { getSession } from "@/lib/auth";
-import { changePassword } from "@/lib/account";
-import { verifyPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { NextRequest } from "next/server";
+import { changePassword } from "@/lib/account";
+import { getSession, verifyPassword } from "@/lib/auth";
+import { schemas, validateBody } from "@/utils/validation";
+import { successResponse, errors, handleApiError } from "@/utils/responses";
 import { z } from "zod";
-
-// Change password schema validation
-const changePasswordSchema = z.object({
-    currentPassword: z.string(),
-    newPassword: z.string().min(8, "New password must be at least 8 characters"),
-});
-
+/**
+ * POST /api/auth/change-password
+ * Changes the password for an authenticated user
+ */
 export async function POST(req: NextRequest) {
     try {
         // Get current session and ensure user is authenticated
         const session = await getSession();
         if (!session?.user?.id) {
-            return NextResponse.json(
-                { error: "Authentication required" },
-                { status: 401 }
-            );
+            return errors.unauthorized("You must be logged in to change your password");
         }
 
         // Parse and validate the request body
-        const body = await req.json();
-        const validation = changePasswordSchema.safeParse(body);
+        const changePasswordSchema = z.object({
+            currentPassword: schemas.passwords.currentPassword,
+            newPassword: schemas.passwords.newPassword
+        })
 
+        const validation = await validateBody(req, changePasswordSchema);
         if (!validation.success) {
-            return NextResponse.json(
-                { error: "Validation error", details: validation.error.issues },
-                { status: 400 }
+            return errors.badRequest(
+                "Invalid password data",
+                validation.error?.details
             );
         }
 
@@ -43,32 +41,31 @@ export async function POST(req: NextRequest) {
         });
 
         if (!user?.password) {
-            return NextResponse.json(
-                { error: "User has no password set" },
-                { status: 400 }
+            return errors.badRequest(
+                "Your account doesn't have a password set",
+                { suggestion: "Use the 'add password' feature instead" }
             );
         }
 
         // Verify current password
         const isPasswordValid = await verifyPassword(currentPassword, user.password);
         if (!isPasswordValid) {
-            return NextResponse.json(
-                { error: "Current password is incorrect" },
-                { status: 400 }
+            return errors.badRequest(
+                "Current password is incorrect",
+                { field: "currentPassword" }
             );
         }
 
         // Change password
         await changePassword(userId, newPassword);
 
-        return NextResponse.json({
-            message: "Password changed successfully"
-        });
-    } catch (error: any) {
-        console.error("Password change error:", error);
-        return NextResponse.json(
-            { error: "Failed to change password", details: error.message },
-            { status: 500 }
+        return successResponse(
+            { userId },
+            "Your password has been successfully changed",
+            undefined,
+            200
         );
+    } catch (error) {
+        return handleApiError(error);
     }
 }

@@ -7,6 +7,7 @@ declare module "next-auth" {
     userAgent?: string;
     device?: string;
     location?: string;
+    isAdmin?: boolean;
   }
 
   interface Session {
@@ -19,6 +20,7 @@ declare module "next-auth" {
       userAgent?: string;
       device?: string;
       location?: string;
+      isAdmin?: boolean;
     };
   }
 
@@ -28,5 +30,6 @@ declare module "next-auth" {
     userAgent?: string;
     device?: string;
     location?: string;
+    isAdmin?: boolean;
   }
 }

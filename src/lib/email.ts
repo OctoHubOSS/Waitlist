@@ -46,7 +46,7 @@ export async function sendEmail({
 }) {
     try {
         const info = await transporter.sendMail({
-            from: process.env.EMAIL_FROM || 'noreply@octosearch.app',
+            from: process.env.EMAIL_FROM || 'accounts@octoflow.com',
             to,
             subject,
             text,

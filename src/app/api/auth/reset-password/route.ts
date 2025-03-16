@@ -1,26 +1,30 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
+import { schemas, validateBody } from "@/utils/validation";
+import { successResponse, errors, handleApiError } from "@/utils/responses";
 import { z } from "zod";
 import crypto from "crypto";
 
-// Reset password schema validation
-const resetPasswordSchema = z.object({
-    token: z.string(),
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-});
-
+/**
+ * POST /api/auth/reset-password
+ * Reset user password using a token sent via email
+ */
 export async function POST(req: NextRequest) {
     try {
         // Parse and validate the request body
-        const body = await req.json();
-        const validation = resetPasswordSchema.safeParse(body);
+        const resetPasswordSchema = z.object({
+            email: schemas.authentication.email,
+            password: schemas.authentication.password,
+            token: schemas.authentication.token,
+        })
+
+        const validation = await validateBody(req, resetPasswordSchema);
 
         if (!validation.success) {
-            return NextResponse.json(
-                { error: "Validation error", details: validation.error.issues },
-                { status: 400 }
+            return errors.badRequest(
+                "Invalid reset password data",
+                validation.error.details
             );
         }
 
@@ -32,9 +36,9 @@ export async function POST(req: NextRequest) {
         });
 
         if (!user) {
-            return NextResponse.json(
-                { error: "Invalid reset request" },
-                { status: 400 }
+            return errors.badRequest(
+                "Invalid reset request",
+                { suggestion: "Check your email address and try again" }
             );
         }
 
@@ -54,9 +58,9 @@ export async function POST(req: NextRequest) {
         });
 
         if (!resetToken) {
-            return NextResponse.json(
-                { error: "Invalid or expired reset token" },
-                { status: 400 }
+            return errors.badRequest(
+                "Invalid or expired reset token",
+                { suggestion: "Please request a new password reset link" }
             );
         }
 
@@ -72,14 +76,13 @@ export async function POST(req: NextRequest) {
             where: { token: resetToken.token }
         });
 
-        return NextResponse.json({
-            message: "Password has been reset successfully"
-        });
-    } catch (error: any) {
-        console.error("Password reset error:", error);
-        return NextResponse.json(
-            { error: "Failed to reset password", details: error.message },
-            { status: 500 }
+        return successResponse(
+            { email },
+            "Password has been reset successfully",
+            undefined,
+            200
         );
+    } catch (error) {
+        return handleApiError(error);
     }
 }

@@ -1,32 +1,33 @@
-import { NextResponse, NextRequest } from "next/server";
-import { getSession } from "@/lib/auth";
-import { addPasswordToAccount, hasPasswordAuth } from "@/lib/account";
 import { z } from "zod";
+import { getSession } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { schemas, validateBody } from "@/utils/validation";
+import { addPasswordToAccount, hasPasswordAuth } from "@/lib/account";
+import { successResponse, errors, handleApiError } from "@/utils/responses";
 
-// Add password schema validation
-const addPasswordSchema = z.object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
-});
-
+/**
+ * POST /api/auth/add-password
+ * Adds a password to a user account that was created with OAuth
+ */
 export async function POST(req: NextRequest) {
     try {
         // Get current session and ensure user is authenticated
         const session = await getSession();
         if (!session?.user?.id) {
-            return NextResponse.json(
-                { error: "Authentication required" },
-                { status: 401 }
-            );
+            return errors.unauthorized("You must be logged in to add a password");
         }
 
         // Parse and validate the request body
-        const body = await req.json();
-        const validation = addPasswordSchema.safeParse(body);
+        const addPasswordSchema = z.object({
+            password: schemas.user.password
+        });
+
+        const validation = await validateBody(req, addPasswordSchema);
 
         if (!validation.success) {
-            return NextResponse.json(
-                { error: "Validation error", details: validation.error.issues },
-                { status: 400 }
+            return errors.badRequest(
+                "Invalid password format",
+                validation.error?.details
             );
         }
 
@@ -36,23 +37,22 @@ export async function POST(req: NextRequest) {
         // Check if user already has a password
         const hasPassword = await hasPasswordAuth(userId);
         if (hasPassword) {
-            return NextResponse.json(
-                { error: "User already has password authentication enabled" },
-                { status: 400 }
+            return errors.conflict(
+                "Password authentication is already enabled for your account",
+                { suggestion: "Use 'change password' instead if you want to update it" }
             );
         }
 
         // Add password to account
         await addPasswordToAccount(userId, password);
 
-        return NextResponse.json({
-            message: "Password added successfully"
-        });
-    } catch (error: any) {
-        console.error("Add password error:", error);
-        return NextResponse.json(
-            { error: "Failed to add password", details: error.message },
-            { status: 500 }
+        return successResponse(
+            { userId },
+            "Password has been successfully added to your account",
+            undefined,
+            200
         );
+    } catch (error) {
+        return handleApiError(error);
     }
 }

@@ -1,16 +1,18 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { unlinkGithubAccount } from "@/lib/account";
+import { successResponse, errors, handleApiError } from "@/utils/responses";
 
+/**
+ * POST /api/auth/unlink-github
+ * Unlinks a GitHub account from the current user's account
+ */
 export async function POST(req: NextRequest) {
     try {
         // Get current session and ensure user is authenticated
         const session = await getSession();
         if (!session?.user?.id) {
-            return NextResponse.json(
-                { error: "Authentication required" },
-                { status: 401 }
-            );
+            return errors.unauthorized("You must be logged in to unlink your GitHub account");
         }
 
         const userId = session.user.id;
@@ -18,14 +20,11 @@ export async function POST(req: NextRequest) {
         // Unlink GitHub account
         await unlinkGithubAccount(userId);
 
-        return NextResponse.json({
-            message: "GitHub account unlinked successfully",
-        });
-    } catch (error: any) {
-        console.error("GitHub account unlinking error:", error);
-        return NextResponse.json(
-            { error: "Failed to unlink GitHub account", details: error.message },
-            { status: 500 }
+        return successResponse(
+            null,
+            "GitHub account unlinked successfully"
         );
+    } catch (error) {
+        return handleApiError(error);
     }
 }

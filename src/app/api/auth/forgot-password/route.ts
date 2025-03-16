@@ -1,25 +1,28 @@
-import { NextResponse, NextRequest } from "next/server";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
 import crypto from "crypto";
-// Note: You'll need to implement sendEmail function or use a library like nodemailer
-// import { sendEmail } from "@/lib/email";
+import { prisma } from "@/lib/db";
+import { NextRequest } from "next/server";
+import { schemas, validateBody } from "@/utils/validation";
+import { successResponse, errors, handleApiError } from "@/utils/responses";
+import { sendEmail, emailTemplates } from "@/lib/email";
+import { z } from "zod";
 
-// Email validation schema
-const emailSchema = z.object({
-    email: z.string().email("Invalid email address"),
-});
-
+/**
+ * POST /api/auth/forgot-password
+ * Initiates the password reset process for a user
+ */
 export async function POST(req: NextRequest) {
     try {
         // Parse and validate the request body
-        const body = await req.json();
-        const validation = emailSchema.safeParse(body);
+        const forgotPasswordSchema = z.object({
+            email: schemas.user.email
+        })
+
+        const validation = await validateBody(req, forgotPasswordSchema);
 
         if (!validation.success) {
-            return NextResponse.json(
-                { error: "Invalid email format" },
-                { status: 400 }
+            return errors.badRequest(
+                "Invalid email format",
+                validation.error?.details
             );
         }
 
@@ -32,9 +35,10 @@ export async function POST(req: NextRequest) {
 
         // We don't want to reveal if a user exists or not for security reasons
         if (!user) {
-            return NextResponse.json(
-                { message: "If the email exists, a password reset link has been sent" },
-                { status: 200 }
+            // Return success even if user doesn't exist (security best practice)
+            return successResponse(
+                null,
+                "If the email exists, a password reset link has been sent"
             );
         }
 
@@ -57,25 +61,27 @@ export async function POST(req: NextRequest) {
         // Create the reset URL
         const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
+        // Get the email template for password reset
+        const { subject, text, html } = emailTemplates.passwordReset(resetUrl);
+
         // Send email with reset link
-        // await sendEmail({
-        //   to: email,
-        //   subject: "Password Reset Request",
-        //   text: `You requested a password reset. Please click the following link to reset your password: ${resetUrl}`,
-        //   html: `<p>You requested a password reset.</p><p>Please click <a href="${resetUrl}">this link</a> to reset your password.</p>`,
-        // });
-
-        // For now, just log the reset URL (REMOVE THIS IN PRODUCTION)
-        console.log("Password reset URL:", resetUrl);
-
-        return NextResponse.json({
-            message: "If the email exists, a password reset link has been sent",
+        await sendEmail({
+            to: email,
+            subject,
+            text,
+            html,
         });
-    } catch (error: any) {
-        console.error("Password reset request error:", error);
-        return NextResponse.json(
-            { error: "Failed to process password reset request" },
-            { status: 500 }
+
+        // For development/debug purposes only
+        if (process.env.NODE_ENV !== 'production') {
+            console.log("Password reset URL:", resetUrl);
+        }
+
+        return successResponse(
+            null,
+            "If the email exists, a password reset link has been sent"
         );
+    } catch (error) {
+        return handleApiError(error);
     }
 }
