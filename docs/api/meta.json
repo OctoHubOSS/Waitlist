@@ -5,6 +5,7 @@
   "icon": "Code",
   "pages": [
     "overview",
+    "rate-limit",
     "repository",
     "repository-contents",
     "repository-languages",
@@ -12,6 +13,10 @@
     "repository-commits",
     "repository-issues",
     "repository-changelog",
-    "user-repositories"
+    "search-code",
+    "search-users",
+    "trending",
+    "user-repositories",
+    "user-starred"
   ]
 }

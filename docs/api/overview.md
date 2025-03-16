@@ -61,11 +61,44 @@ API requests are subject to GitHub's rate limiting. Use the `/api/rate/limit` en
 
 The OctoSearch API is organized into the following categories:
 
-1. **Repository APIs** - Access repository data, contents, and activity
-2. **User APIs** - Retrieve user profile data and repositories
-3. **Search APIs** - Search for users, repositories, and code
-4. **Trending APIs** - Get current trending repositories and developers
-5. **Other APIs** - Additional endpoints for gists, rate limits, etc.
+### Repository APIs
+
+- **Repository Details** - Basic repository information `/api/repo`
+- **Repository Contents** - File and directory listings `/api/repo/contents`
+- **Repository Languages** - Language distribution statistics `/api/repo/languages`
+- **Repository Branches** - List branches in a repository `/api/repo/branches`
+- **Repository Commits** - List and filter repository commits `/api/repo/commits`
+- **Repository Issues** - Retrieve issues and pull requests `/api/repo/issues`
+- **Repository Changelog** - Generate changelogs from releases `/api/repo/changelog`
+
+### User APIs
+
+- **User Repositories** - List repositories for a user `/api/user/repos`
+- **User Starred** - List repositories starred by a user `/api/user/starred`
+
+### Search APIs
+
+- **Code Search** - Find code matching specific criteria `/api/search/code`
+- **User Search** - Find users and organizations `/api/search/users`
+
+### Trending APIs
+
+- **Trending Repositories** - Get currently popular repositories `/api/trending/repos`
+- **Trending Developers** - Get currently popular developers `/api/trending/devs`
+
+### Authentication APIs
+
+- **Register** - Create a new user account `/api/auth/register`
+- **Login** - Authenticate user `/api/auth/[...nextauth]`
+- **Password Management** - Reset, change, add passwords `/api/auth/*-password`
+- **GitHub Integration** - Link and unlink GitHub accounts `/api/auth/link-github`
+
+### Other APIs
+
+- **Gists** - Access GitHub Gists `/api/gists`
+- **Rate Limit** - Check API usage limits `/api/rate/limit`
+- **Email** - Send notifications (admin only) `/api/email/send`
+- **Documentation** - Access API documentation `/api/docs/categories`
 
 ## Next Steps
 
