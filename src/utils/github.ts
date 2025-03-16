@@ -2,7 +2,6 @@ import { Octokit } from "octokit";
 import { throttling } from "@octokit/plugin-throttling";
 import { retry } from "@octokit/plugin-retry";
 import { createAppAuth } from "@octokit/auth-app";
-import type { EndpointDefaults, RequestRequestOptions } from "@octokit/types";
 
 // Rate limit warning threshold - can be made configurable
 const RATE_LIMIT_WARNING_THRESHOLD = 20;
@@ -19,7 +18,6 @@ interface OctokitResponseType<T = any> {
 }
 
 const OctokitWithPlugins = Octokit.plugin(throttling, retry);
-
 let octokitInstance: Octokit | null = null;
 
 /**
@@ -34,25 +32,28 @@ let octokitInstance: Octokit | null = null;
  * - Caching for frequently accessed endpoints
  * - Logging for rate limit warnings
  * 
- * @param forceNew If true, creates a new instance even if one already exists
+ * @param forceNewOrToken If boolean, forces a new instance; if string, uses as token
  * @returns Configured Octokit instance with plugins
  * @throws Error if no authentication method is configured
  */
-export function getOctokitClient(forceNew = false): Octokit {
+export function getOctokitClient(forceNewOrToken?: boolean | string): Octokit {
+    const forceNew = typeof forceNewOrToken === 'boolean' ? forceNewOrToken : false;
+    const providedToken = typeof forceNewOrToken === 'string' ? forceNewOrToken : undefined;
+
     if (!octokitInstance || forceNew) {
         // Validate authentication is present
-        if (!process.env.GITHUB_TOKEN &&
+        if (!providedToken && !process.env.GITHUB_TOKEN &&
             !(process.env.GITHUB_APP_ID && process.env.GITHUB_PRIVATE_KEY && process.env.GITHUB_INSTALLATION_ID)) {
             throw new Error("No GitHub authentication method configured. Set either GITHUB_TOKEN or GITHUB_APP_ID, GITHUB_PRIVATE_KEY, and GITHUB_INSTALLATION_ID environment variables.");
         }
 
-        const auth = process.env.GITHUB_APP_ID && process.env.GITHUB_PRIVATE_KEY
+        const auth = providedToken || (process.env.GITHUB_APP_ID && process.env.GITHUB_PRIVATE_KEY
             ? createAppAuth({
                 appId: process.env.GITHUB_APP_ID,
                 privateKey: process.env.GITHUB_PRIVATE_KEY,
                 installationId: process.env.GITHUB_INSTALLATION_ID
             })
-            : process.env.GITHUB_TOKEN;
+            : process.env.GITHUB_TOKEN);
 
         octokitInstance = new OctokitWithPlugins({
             auth,
@@ -66,7 +67,6 @@ export function getOctokitClient(forceNew = false): Octokit {
                     if (options.method === "GET" && retryCount < 3) {
                         return true;
                     }
-
                     octokit.log.error(`Rate limit hit, not retrying ${options.method} ${options.url}`);
                     return false;
                 },
@@ -92,22 +92,21 @@ export function getOctokitClient(forceNew = false): Octokit {
                 },
                 cachePredicate: (response: OctokitResponseType) => {
                     return response.status >= 200 && response.status < 300;
-                }
+                },
             },
             log: {
                 debug: () => { },
                 info: console.log,
                 warn: console.warn,
-                error: console.error
-            }
+                error: console.error,
+            },
         });
 
         octokitInstance.hook.after("request", (response) => {
             const rateLimitRemaining = response.headers?.["x-ratelimit-remaining"];
-            const rateLimit = response.headers?.["x-ratelimit-limit"];
-            const resetTime = response.headers?.["x-ratelimit-reset"];
-
             if (rateLimitRemaining && parseInt(String(rateLimitRemaining)) < RATE_LIMIT_WARNING_THRESHOLD) {
+                const rateLimit = response.headers?.["x-ratelimit-limit"];
+                const resetTime = response.headers?.["x-ratelimit-reset"];
                 const resetDate = resetTime ? new Date(parseInt(String(resetTime)) * 1000).toLocaleString() : 'unknown';
                 console.warn(`⚠️ GitHub API Rate Limit: ${rateLimitRemaining}/${rateLimit} requests remaining. Resets at ${resetDate}`);
             }
@@ -142,11 +141,6 @@ export function formatNumber(num: number): string {
  * @throws Error if the URL is not a valid GitHub repository URL
  */
 export function parseGitHubRepoUrl(url: string): { owner: string, repo: string } {
-    // Support various GitHub URL formats:
-    // - https://github.com/owner/repo
-    // - https://github.com/owner/repo.git
-    // - git@github.com:owner/repo.git
-
     try {
         let match: RegExpMatchArray | null;
 
