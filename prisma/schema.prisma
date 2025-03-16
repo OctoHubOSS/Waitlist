@@ -116,6 +116,13 @@ model User {
     Tag              Tag[]
     Issue            Issue[]
 
+    // Add API tokens relation
+    apiTokens ApiToken[] @relation("UserApiTokens")
+
+    // Audit log relations
+    auditLogsAsActor AuditLog[] @relation("AuditLogActor")
+    auditLogs        AuditLog[] @relation("UserAuditLogs")
+
     @@index([email, status])
     @@index([githubUsername, githubId])
     @@index([lastActiveAt, status])
@@ -160,6 +167,12 @@ model Organization {
     // New relations
     packages Package[]
     webhooks Webhook[]
+
+    // Add API tokens relation
+    apiTokens ApiToken[] @relation("OrgApiTokens")
+
+    // Audit log relation
+    auditLogs AuditLog[] @relation("OrganizationAuditLogs")
 
     @@unique([name])
     @@index([name])
@@ -271,6 +284,9 @@ model Repository {
     wikiPages         WikiPage[]
     workflows         Workflow[]
     Release           Release[]
+
+    // Audit log relation
+    auditLogs AuditLog[] @relation("RepositoryAuditLogs")
 
     // Optimized compound indexes
     @@unique([orgId, name])
@@ -1343,4 +1359,183 @@ enum WorkflowConclusion {
     TIMED_OUT
     ACTION_REQUIRED
     NEUTRAL
+}
+
+// API Token model for both user and organization tokens
+model ApiToken {
+    id          String    @id @default(cuid())
+    name        String
+    description String?   @db.Text
+    token       String    @unique // Hashed token value
+    type        TokenType @default(BASIC)
+    scopes      Json // Array of permission scopes
+    expiresAt   DateTime?
+    lastUsedAt  DateTime?
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    deletedAt   DateTime?
+
+    // IP and referrer restrictions
+    allowedIps       Json? // Array of allowed IP addresses/ranges
+    allowedReferrers Json? // Array of allowed referrer domains
+
+    // Rate limiting
+    rateLimit     Int? // Requests per hour, null for unlimited
+    rateLimitUsed Int       @default(0)
+    resetAt       DateTime? // When rate limit resets
+
+    // Owner - only one of these should be set
+    userId String?
+    user   User?         @relation("UserApiTokens", fields: [userId], references: [id], onDelete: Cascade)
+    orgId  String?
+    org    Organization? @relation("OrgApiTokens", fields: [orgId], references: [id], onDelete: Cascade)
+
+    // Token usage history
+    usageHistory ApiTokenUsage[]
+
+    @@index([token])
+    @@index([userId])
+    @@index([orgId])
+    @@index([deletedAt])
+    @@index([expiresAt])
+    @@index([lastUsedAt])
+}
+
+// API Token usage history for analytics
+model ApiTokenUsage {
+    id        String   @id @default(cuid())
+    tokenId   String
+    token     ApiToken @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+    endpoint  String // API endpoint called
+    method    String // HTTP method
+    status    Int // Response status code
+    ipAddress String?
+    userAgent String?  @db.Text
+    createdAt DateTime @default(now())
+
+    @@index([tokenId])
+    @@index([endpoint])
+    @@index([createdAt])
+}
+
+// Add TokenType enum
+enum TokenType {
+    BASIC // Limited access, read-only operations
+    ADVANCED // Full access, read-write operations
+}
+
+// Audit log for tracking changes across entities
+model AuditLog {
+    id        String        @id @default(cuid())
+    action    AuditAction
+    category  AuditCategory
+    message   String        @db.Text
+    details   Json? // Detailed information about what changed
+    metadata  Json? // Additional context about the change
+    createdAt DateTime      @default(now())
+
+    // Actor who performed the action
+    actorId   String?
+    actor     User?   @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+    actorIp   String?
+    userAgent String? @db.Text
+
+    // Target entity that was affected (only one should be set)
+    userId         String?
+    user           User?         @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+    repositoryId   String?
+    repository     Repository?   @relation("RepositoryAuditLogs", fields: [repositoryId], references: [id], onDelete: SetNull)
+    organizationId String?
+    organization   Organization? @relation("OrganizationAuditLogs", fields: [organizationId], references: [id], onDelete: SetNull)
+
+    @@index([action])
+    @@index([category])
+    @@index([createdAt])
+    @@index([actorId])
+    @@index([userId])
+    @@index([repositoryId])
+    @@index([organizationId])
+}
+
+enum AuditAction {
+    CREATE
+    UPDATE
+    DELETE
+    RESTORE
+    ARCHIVE
+    UNARCHIVE
+    ENABLE
+    DISABLE
+    GRANT
+    REVOKE
+    LOGIN
+    LOGOUT
+    RESET
+    VERIFY
+    INVITE
+    ACCEPT
+    REJECT
+    TRANSFER
+    FORK
+    MERGE
+    SYNC
+    DEPLOY
+    ROLLBACK
+    CUSTOM
+}
+
+enum AuditCategory {
+    USER
+    REPOSITORY
+    ORGANIZATION
+    TEAM
+    MEMBER
+    PERMISSION
+    TOKEN
+    WEBHOOK
+    SECURITY
+    AUTHENTICATION
+    INTEGRATION
+    BILLING
+    SETTINGS
+    CONTENT
+    OTHER
+}
+
+// Rate limiting for IP addresses and anonymous requests
+model RateLimit {
+    id           String    @id @default(cuid())
+    identifier   String // IP address or other identifier
+    endpoint     String? // Specific endpoint being rate limited
+    method       String? // HTTP method (GET, POST, etc)
+    count        Int       @default(0)
+    resetAt      DateTime // When the counter resets
+    blockedUntil DateTime? // When the block expires (if blocked)
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
+
+    @@unique([identifier, endpoint, method])
+    @@index([identifier])
+    @@index([resetAt])
+    @@index([blockedUntil])
+}
+
+// Rate limit configuration for different endpoints/methods
+model RateLimitRule {
+    id       String  @id @default(cuid())
+    endpoint String? // Null means applies to all endpoints
+    method   String? // Null means applies to all methods
+    limit    Int // Number of requests allowed
+    window   Int // Time window in seconds
+    blockFor Int? // How long to block if exceeded (seconds)
+
+    // Different limits for authenticated requests
+    tokenLimit  Int? // Null means use token's own limit
+    tokenWindow Int? // Null means use token's own window
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([endpoint, method])
+    @@index([endpoint])
 }

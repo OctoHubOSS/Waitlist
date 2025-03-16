@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getOctokitClient } from "@/utils/github";
+import { successResponse, errors } from "@/utils/responses";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
         const octokit = getOctokitClient();
 
@@ -24,20 +25,22 @@ export async function GET() {
                 used: data.resources.search.used,
                 percentRemaining: Math.round((data.resources.search.remaining / data.resources.search.limit) * 100)
             },
-            graphql: {
-                limit: data.resources.graphql.limit,
-                remaining: data.resources.graphql.remaining,
-                reset: new Date(data.resources.graphql.reset * 1000).toISOString(),
-                used: data.resources.graphql.used,
-                percentRemaining: Math.round((data.resources.graphql.remaining / data.resources.graphql.limit) * 100)
-            },
+            ...(data.resources.graphql && {
+                graphql: {
+                    limit: data.resources.graphql.limit,
+                    remaining: data.resources.graphql.remaining,
+                    reset: new Date(data.resources.graphql.reset * 1000).toISOString(),
+                    used: data.resources.graphql.used,
+                    percentRemaining: Math.round((data.resources.graphql.remaining / data.resources.graphql.limit) * 100)
+                }
+            }),
             // Include rate limit for the authenticated user
             authenticated: !!data.rate.limit
         };
 
-        return NextResponse.json(rateLimits);
+        return successResponse(rateLimits, 'GitHub rate limits retrieved successfully');
     } catch (err: any) {
         console.error("Error fetching rate limits:", err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        return errors.github(err.message);
     }
 }

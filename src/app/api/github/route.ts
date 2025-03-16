@@ -1,9 +1,8 @@
-import { NextResponse } from 'next/server';
+import { successResponse } from "@/utils/responses";
 
 export async function GET(request: Request) {
-    return NextResponse.json({
-        status: 'ok',
+    return successResponse({
         message: 'OctoFlow GitHub API endpoint',
         documentation: '/api/docs/github'
-    });
+    }, 'GitHub API is operational');
 }

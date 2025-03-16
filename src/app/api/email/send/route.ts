@@ -1,7 +1,9 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { z } from "zod";
+import { successResponse, errors } from "@/utils/responses";
+import { validate } from "@/utils/validation";
 
 // Email request schema validation
 const emailRequestSchema = z.object({
@@ -13,33 +15,23 @@ const emailRequestSchema = z.object({
 
 export async function POST(req: NextRequest) {
     try {
-
         const session = await getSession();
 
         if (!session?.user?.id) {
-            return NextResponse.json(
-                { error: "Authentication required" },
-                { status: 401 }
-            );
+            return errors.unauthorized();
         }
 
         // Only allow admin users to send arbitrary emails
         if (!session.user.isAdmin) {
-            return NextResponse.json(
-                { error: "Permission denied" },
-                { status: 403 }
-            );
+            return errors.forbidden('Only administrators can send emails');
         }
 
         // Parse and validate the request body
         const body = await req.json();
-        const validation = emailRequestSchema.safeParse(body);
+        const validation = validate(emailRequestSchema, body);
 
         if (!validation.success) {
-            return NextResponse.json(
-                { error: "Invalid email request", details: validation.error.format() },
-                { status: 400 }
-            );
+            return errors.badRequest('Invalid email request', validation.error);
         }
 
         // Send the email
@@ -47,21 +39,14 @@ export async function POST(req: NextRequest) {
         const result = await sendEmail({ to, subject, text, html });
 
         if (!result.success) {
-            return NextResponse.json(
-                { error: "Failed to send email" },
-                { status: 500 }
-            );
+            return errors.internal('Failed to send email');
         }
 
-        return NextResponse.json({
-            message: "Email sent successfully",
+        return successResponse({
             messageId: result.messageId
-        });
+        }, 'Email sent successfully');
     } catch (error: any) {
         console.error("Email sending error:", error);
-        return NextResponse.json(
-            { error: "Failed to send email", details: error.message },
-            { status: 500 }
-        );
+        return errors.internal('Failed to send email', error.message);
     }
 }
