@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
     provider = "prisma-client-js"
 }
@@ -10,7 +7,7 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-// NextAuth Models
+// Account model for OAuth providers (from NextAuth)
 model Account {
     id                String  @id @default(cuid())
     userId            String
@@ -30,6 +27,7 @@ model Account {
     @@unique([provider, providerAccountId])
 }
 
+// Session model from NextAuth
 model Session {
     id           String   @id @default(cuid())
     sessionToken String   @unique
@@ -38,18 +36,62 @@ model Session {
     user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// User model for authentication and profile information
 model User {
-    id             String           @id @default(cuid())
-    name           String?
-    email          String?          @unique
-    emailVerified  DateTime?
-    image          String?
-    accounts       Account[]
-    sessions       Session[]
-    SearchQuery    SearchQuery[]
-    UserRepository UserRepository[]
+    id          String   @id @default(cuid())
+    name        String?
+    displayName String?  @unique
+    image       String?
+    bio         String?  @db.Text
+    website     String?
+    location    String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    // Authentication
+    email         String?   @unique
+    emailVerified DateTime?
+    password      String?   @db.Text
+
+    // Status tracking
+    lastLoginAt   DateTime?
+    lastActiveAt  DateTime?
+    status        UserStatus @default(OFFLINE)
+    statusMessage String?
+
+    // Authentication & Session
+    accounts Account[]
+    sessions Session[]
+
+    // OctoFlow relationships
+    repositories     Repository[]     @relation("UserRepositories")
+    stars            Star[]
+    ownedOrgs        Organization[]   @relation("OrganizationOwner")
+    orgMemberships   OrgMembership[]
+    teamMemberships  TeamMembership[]
+    contributedRepos Contribution[]   @relation("UserContributions")
+
+    // GitHub integration
+    githubId          String?      @unique
+    githubUsername    String?      @unique
+    githubDisplayName String?
+    linkedRepos       Repository[] @relation("LinkedRepositories")
+
+    // User preferences
+    preferences Json?
+
+    // Search tracking
+    searches       SearchQuery[]
+    searchClicks   SearchClick[]
+    RepositoryView RepositoryView[]
+    UserActivity   UserActivity[]
+    UserPresence   UserPresence[]
+
+    @@index([email])
+    @@index([githubUsername])
 }
 
+// VerificationToken model from NextAuth
 model VerificationToken {
     identifier String
     token      String   @unique
@@ -58,113 +100,415 @@ model VerificationToken {
     @@unique([identifier, token])
 }
 
+// Organization model for team-based repository management
+model Organization {
+    id          String   @id @default(cuid())
+    name        String
+    displayName String?
+    description String?  @db.Text
+    avatarUrl   String?
+    website     String?
+    location    String?
+    email       String?
+    isPublic    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    // Relationships
+    ownerId      String
+    owner        User            @relation("OrganizationOwner", fields: [ownerId], references: [id])
+    members      OrgMembership[]
+    teams        Team[]
+    repositories Repository[]    @relation("OrganizationRepositories")
+
+    // GitHub integration
+    githubOrgName String? @unique
+    githubOrgId   String? @unique
+
+    @@unique([name])
+    @@index([name])
+}
+
+// Organization membership with roles
+model OrgMembership {
+    id        String   @id @default(cuid())
+    role      OrgRole  @default(MEMBER)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relationships
+    userId         String
+    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, organizationId])
+}
+
+// Teams within organizations
+model Team {
+    id          String   @id @default(cuid())
+    name        String
+    description String?  @db.Text
+    isPrivate   Boolean  @default(false)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @default(now())
+
+    // Relationships
+    organizationId String
+    organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    members        TeamMembership[]
+    repoAccess     TeamRepositoryAccess[]
+
+    @@unique([organizationId, name])
+}
+
+// Team membership with roles
+model TeamMembership {
+    id        String   @id @default(cuid())
+    role      TeamRole @default(MEMBER)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    // Relationships
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    teamId String
+    team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, teamId])
+}
+
+// Repositories (both native and GitHub-linked)
 model Repository {
-    id              String           @id @default(cuid())
-    githubId        Int              @unique
-    name            String
-    fullName        String           @unique // owner/repo format
-    description     String?          @db.Text
-    url             String
-    homepage        String?
-    language        String?
-    size            Int
-    stargazersCount Int              @default(0)
-    forksCount      Int              @default(0)
-    watchersCount   Int              @default(0)
-    openIssuesCount Int              @default(0)
-    archived        Boolean          @default(false)
-    disabled        Boolean          @default(false)
-    visibility      String           @default("public")
-    defaultBranch   String           @default("main")
-    license         String?
-    topics          Topic[]
-    owner           Owner            @relation(fields: [ownerId], references: [id])
-    ownerId         String
-    searchResults   SearchResult[]
-    userSaves       UserRepository[]
+    id            String    @id @default(cuid())
+    name          String
+    description   String?   @db.Text
+    isPrivate     Boolean   @default(false)
+    defaultBranch String    @default("main")
+    language      String?
+    forkCount     Int       @default(0)
+    starCount     Int       @default(0)
+    size          Int       @default(0) // In KB
+    watcherCount  Int       @default(0)
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
+    lastPushedAt  DateTime?
 
-    createdAt    DateTime  @default(now())
-    updatedAt    DateTime  @updatedAt
-    deletedAt    DateTime?
-    lastSyncedAt DateTime?
+    // Repository source and ownership
+    source       RepoSource    @default(OCTOFLOW)
+    ownerId      String? // User owner (if not org-owned)
+    owner        User?         @relation("UserRepositories", fields: [ownerId], references: [id], onDelete: SetNull)
+    orgId        String? // Org owner (if not user-owned)
+    organization Organization? @relation("OrganizationRepositories", fields: [orgId], references: [id], onDelete: SetNull)
+
+    // GitHub integration
+    isGithubLinked  Boolean   @default(false)
+    githubRepoId    String?   @unique
+    githubFullName  String? // format: owner/repo
+    githubOwnerId   String? // GitHub user or org ID
+    githubOwnerType String? // "User" or "Organization"
+    linkedByUser    String? // User who linked this repo
+    linkedBy        User?     @relation("LinkedRepositories", fields: [linkedByUser], references: [id])
+    lastSyncedAt    DateTime?
+
+    // Repository relationships
+    stars        Star[]
+    teams        TeamRepositoryAccess[]
+    contributors Contribution[]         @relation("RepoContributions")
+    parentRepoId String? // For forks
+    parentRepo   Repository?            @relation("ForkRelation", fields: [parentRepoId], references: [id])
+    forks        Repository[]           @relation("ForkRelation")
+    topics       Topic[]
+
+    // Search statistics
+    searchImpressions SearchImpression[]
+    searchClicks      SearchClick[]
+    RepositoryStats   RepositoryStats?
+    RepositoryView    RepositoryView[]
+
+    @@unique([orgId, name])
+    @@unique([ownerId, name])
+    @@index([name])
+    @@index([githubFullName])
+    @@index([isGithubLinked])
 }
 
-model Owner {
-    id           String       @id @default(cuid())
-    githubId     Int          @unique
-    login        String       @unique
-    type         OwnerType    @default(USER)
-    name         String?
-    avatarUrl    String?
-    url          String
-    htmlUrl      String
-    description  String?      @db.Text
-    repositories Repository[]
-
-    createdAt    DateTime  @default(now())
-    updatedAt    DateTime  @updatedAt
-    deletedAt    DateTime?
-    lastSyncedAt DateTime?
-}
-
-enum OwnerType {
-    USER
-    ORGANIZATION
-}
-
+// Topics/tags for repositories
 model Topic {
     id           String       @id @default(cuid())
     name         String       @unique
-    description  String?      @db.Text
     repositories Repository[]
 
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
-    deletedAt DateTime?
+    // Search statistics
+    searchImpressions SearchImpression[]
+    searchClicks      SearchClick[]
+
+    @@index([name])
 }
 
-model SearchQuery {
-    id            String         @id @default(cuid())
-    query         String
-    user          User?          @relation(fields: [userId], references: [id])
-    userId        String?
-    searchResults SearchResult[]
-
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @default(now())
-    deletedAt DateTime?
-}
-
-model SearchResult {
-    id             String      @id @default(cuid())
-    searchQuery    SearchQuery @relation(fields: [searchQueryId], references: [id])
-    searchQueryId  String
-    repository     Repository  @relation(fields: [repositoryId], references: [id])
-    repositoryId   String
-    rank           Int
-    relevanceScore Float
-
+// Stars on repositories
+model Star {
+    id        String   @id @default(cuid())
     createdAt DateTime @default(now())
-}
 
-model UserRepository {
-    id           String     @id @default(cuid())
-    user         User       @relation(fields: [userId], references: [id])
+    // Relationships
     userId       String
-    repository   Repository @relation(fields: [repositoryId], references: [id])
+    user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
     repositoryId String
-    isFavorite   Boolean    @default(false)
-    notes        String?    @db.Text
-    tags         String?
-
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
-    deletedAt DateTime?
+    repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
 
     @@unique([userId, repositoryId])
 }
 
-enum Role {
-    USER
+// Team access to repositories with permissions
+model TeamRepositoryAccess {
+    id         String         @id @default(cuid())
+    permission RepoPermission @default(READ)
+    createdAt  DateTime       @default(now())
+    updatedAt  DateTime       @updatedAt
+
+    // Relationships
+    teamId       String
+    team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+    repositoryId String
+    repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+    @@unique([teamId, repositoryId])
+}
+
+// User contributions to repositories
+model Contribution {
+    id        String      @id @default(cuid())
+    role      ContribRole @default(CONTRIBUTOR)
+    createdAt DateTime    @default(now())
+    updatedAt DateTime    @default(now())
+
+    // Relationships
+    userId       String
+    user         User       @relation("UserContributions", fields: [userId], references: [id], onDelete: Cascade)
+    repositoryId String
+    repository   Repository @relation("RepoContributions", fields: [repositoryId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, repositoryId])
+}
+
+// Search query tracking
+model SearchQuery {
+    id           String   @id @default(cuid())
+    query        String   @db.Text
+    filters      Json? // Store search filters as JSON
+    resultsCount Int
+    sourceIp     String?
+    userAgent    String?  @db.Text
+    createdAt    DateTime @default(now())
+
+    // User association (optional - for logged in users)
+    userId String?
+    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+    // Related search events
+    impressions SearchImpression[]
+    clicks      SearchClick[]
+
+    @@index([query(length: 256)])
+    @@index([userId])
+    @@index([createdAt])
+}
+
+// Track search result impressions (what results were shown)
+model SearchImpression {
+    id        String   @id @default(cuid())
+    position  Int // Position in search results (1-based)
+    createdAt DateTime @default(now())
+
+    // Relations
+    searchId String
+    search   SearchQuery @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+    // What was displayed (only one of these should be set)
+    repositoryId String?
+    repository   Repository? @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
+    topicId      String?
+    topic        Topic?      @relation(fields: [topicId], references: [id], onDelete: SetNull)
+
+    @@index([searchId])
+    @@index([repositoryId])
+    @@index([topicId])
+    @@index([createdAt])
+}
+
+// Track clicks on search results
+model SearchClick {
+    id        String   @id @default(cuid())
+    position  Int // Position that was clicked (1-based)
+    createdAt DateTime @default(now())
+
+    // Relations
+    searchId String
+    search   SearchQuery @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+    // User who clicked (if logged in)
+    userId String?
+    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+    // What was clicked (only one of these should be set)
+    repositoryId String?
+    repository   Repository? @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
+    topicId      String?
+    topic        Topic?      @relation(fields: [topicId], references: [id], onDelete: SetNull)
+
+    @@index([searchId])
+    @@index([userId])
+    @@index([repositoryId])
+    @@index([topicId])
+    @@index([createdAt])
+}
+
+// Track popular search terms and provide analytics
+model SearchTrending {
+    id           String   @id @default(cuid())
+    term         String   @unique
+    count        Int      @default(0)
+    lastSearched DateTime @default(now())
+
+    // Time periods for trending calculation
+    dailyCount   Int @default(0)
+    weeklyCount  Int @default(0)
+    monthlyCount Int @default(0)
+
+    // Track when counts were last reset
+    dailyReset   DateTime @default(now())
+    weeklyReset  DateTime @default(now())
+    monthlyReset DateTime @default(now())
+
+    @@index([term])
+    @@index([count])
+    @@index([dailyCount])
+    @@index([weeklyCount])
+    @@index([monthlyCount])
+}
+
+// Store aggregated repository statistics
+model RepositoryStats {
+    id           String     @id @default(cuid())
+    repositoryId String     @unique
+    repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+    // View counts
+    viewCount     Int @default(0)
+    uniqueViewers Int @default(0)
+
+    // Search statistics
+    impressionCount  Int   @default(0)
+    clickCount       Int   @default(0)
+    clickThroughRate Float @default(0) // CTR as percentage
+
+    // Time periods
+    dailyViews   Int @default(0)
+    weeklyViews  Int @default(0)
+    monthlyViews Int @default(0)
+
+    // Track reset dates
+    lastUpdated  DateTime @default(now())
+    dailyReset   DateTime @default(now())
+    weeklyReset  DateTime @default(now())
+    monthlyReset DateTime @default(now())
+}
+
+// Track repository views
+model RepositoryView {
+    id           String     @id @default(cuid())
+    repositoryId String
+    repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+    // Viewer info
+    userId    String?
+    user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+    sourceIp  String?
+    userAgent String? @db.Text
+    referrer  String? @db.Text
+
+    createdAt DateTime @default(now())
+
+    @@index([repositoryId])
+    @@index([userId])
+    @@index([createdAt])
+}
+
+// User activity tracking
+model UserActivity {
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    action    String
+    metadata  Json?
+    ipAddress String?
+    userAgent String?  @db.Text
+    createdAt DateTime @default(now())
+
+    @@index([userId])
+    @@index([action])
+    @@index([createdAt])
+}
+
+// User presence history for analytics
+model UserPresence {
+    id        String     @id @default(cuid())
+    userId    String
+    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    status    UserStatus
+    startedAt DateTime   @default(now())
+    endedAt   DateTime?
+    duration  Int? // Duration in seconds, calculated when status changes
+
+    @@index([userId])
+    @@index([status])
+    @@index([startedAt])
+}
+
+// Enum for repository sources
+enum RepoSource {
+    OCTOFLOW
+    GITHUB
+    GITLAB
+    BITBUCKET
+}
+
+// Enum for organization roles
+enum OrgRole {
+    OWNER
     ADMIN
+    MEMBER
+}
+
+// Enum for team roles
+enum TeamRole {
+    MAINTAINER
+    MEMBER
+}
+
+// Enum for repository permissions
+enum RepoPermission {
+    READ
+    WRITE
+    ADMIN
+}
+
+// Enum for contributor roles
+enum ContribRole {
+    OWNER
+    MAINTAINER
+    CONTRIBUTOR
+}
+
+// Enum for user status
+enum UserStatus {
+    ONLINE
+    IDLE
+    DO_NOT_DISTURB
+    BUSY
+    AWAY
+    OFFLINE
+    INVISIBLE
 }

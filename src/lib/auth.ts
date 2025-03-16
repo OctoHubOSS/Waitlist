@@ -9,14 +9,12 @@ import { prisma } from "@/lib/db";
  * NextAuth configuration options
  */
 export const authOptions: NextAuthOptions = {
-  // Use Prisma adapter with proper error handling
   adapter: PrismaAdapter(prisma) as Adapter,
 
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_CLIENT_ID || "",
       clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-      // Request additional scopes as needed
       authorization: {
         params: {
           scope: "read:user user:email repo",
@@ -43,8 +41,6 @@ export const authOptions: NextAuthOptions = {
 
   // Configure debug mode based on environment
   debug: process.env.NODE_ENV === "development",
-
-  // Enhance security with additional options
   session: {
     strategy: "database",
     maxAge: 30 * 24 * 60 * 60, // 30 days
