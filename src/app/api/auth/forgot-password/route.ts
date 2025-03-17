@@ -1,8 +1,8 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { NextRequest } from "next/server";
-import { schemas, validateBody } from "@/utils/validation";
-import { successResponse, errors, handleApiError } from "@/utils/responses";
+import { schemas, validateBody } from "@/lib/api/validation";
+import { successResponse, errors, handleApiError } from "@/lib/api/responses";
 import { sendEmail, emailTemplates } from "@/lib/email";
 import { z } from "zod";
 

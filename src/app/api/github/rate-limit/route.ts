@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getOctokitClient } from "@/utils/github";
-import { successResponse, errors } from "@/utils/responses";
+import { successResponse, errors } from "@/lib/api/responses";
 
 export async function GET(req: NextRequest) {
     try {

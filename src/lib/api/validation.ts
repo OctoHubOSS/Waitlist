@@ -159,11 +159,74 @@ export const apiSchemas = {
      */
     search: (additionalFields?: z.ZodRawShape) => {
         const baseSchema = {
-            q: z.string().min(1, "Search query is required"),
+            q: z.string().min(1, "Search query is required").optional(),
             page: schemas.pagination.page,
             per_page: schemas.pagination.perPage,
-            sort: z.string().optional(),
+            sort: z.enum(['relevance', 'stars', 'forks', 'updated', 'created']).default('relevance'),
             order: schemas.sorting.direction,
+            type: z.enum(['all', 'repositories', 'users', 'organizations', 'code']).default('all'),
+            // Advanced search fields
+            name: z.string().optional(),
+            description: z.string().optional(),
+            language: z.string().optional(),
+            topics: z.array(z.string()).optional(),
+            owner: z.string().optional(),
+            organization: z.string().optional(),
+            stars: z.string().regex(/^\d+$|^\d+\.\.\d+$|^\d+\.\*$|^\*\.\.\d+$/, "Invalid stars range format").optional(),
+            forks: z.string().regex(/^\d+$|^\d+\.\.\d+$|^\d+\.\*$|^\*\.\.\d+$/, "Invalid forks range format").optional(),
+            size: z.string().regex(/^\d+$|^\d+\.\.\d+$|^\d+\.\*$|^\*\.\.\d+$/, "Invalid size range format").optional(),
+            created: z.string().regex(/^\d{4}-\d{2}-\d{2}$|^\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional(),
+            updated: z.string().regex(/^\d{4}-\d{2}-\d{2}$|^\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional(),
+            license: z.string().optional(),
+            archived: z.boolean().optional(),
+            is_template: z.boolean().optional(),
+            visibility: z.enum(['public', 'private']).optional(),
+            // User/Organization specific fields
+            username: z.string().optional(),
+            email: z.string().email().optional(),
+            location: z.string().optional(),
+            followers: z.string().regex(/^\d+$|^\d+\.\.\d+$|^\d+\.\*$|^\*\.\.\d+$/, "Invalid followers range format").optional(),
+            repos: z.string().regex(/^\d+$|^\d+\.\.\d+$|^\d+\.\*$|^\*\.\.\d+$/, "Invalid repos range format").optional(),
+            joined: z.string().regex(/^\d{4}-\d{2}-\d{2}$|^\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional(),
+            // Code search specific fields
+            filename: z.string().optional(),
+            extension: z.string().optional(),
+            path: z.string().optional(),
+        };
+
+        if (additionalFields) {
+            return z.object({ ...baseSchema, ...additionalFields });
+        }
+
+        return z.object(baseSchema);
+    },
+
+    /**
+     * Creates a schema for trending endpoints
+     */
+    trending: (additionalFields?: z.ZodRawShape) => {
+        const baseSchema = {
+            type: z.enum(['REPOSITORY', 'USER', 'ORGANIZATION']).default('REPOSITORY'),
+            period: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']).default('DAILY'),
+            limit: z.coerce.number().int().min(1).max(100).default(10)
+        };
+
+        if (additionalFields) {
+            return z.object({ ...baseSchema, ...additionalFields });
+        }
+
+        return z.object(baseSchema);
+    },
+
+    /**
+     * Creates a schema for suggestions endpoints
+     */
+    suggestions: (additionalFields?: z.ZodRawShape) => {
+        const baseSchema = {
+            q: z.string().default(''),
+            types: z.array(z.enum(['repository', 'user', 'organization', 'language', 'topic', 'trending']))
+                .default(['repository', 'user', 'organization', 'language', 'topic', 'trending']),
+            limit: z.coerce.number().int().min(1).max(20).default(5)
         };
 
         if (additionalFields) {

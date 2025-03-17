@@ -33,6 +33,13 @@ export interface DocCategory {
     icon?: string;
     defaultOpen: boolean;
     pages: DocPageInfo[];
+    sections?: Array<{
+        id: string;
+        title: string;
+        pages: DocPageInfo[];
+    }>;
+    order?: number;
+    isRootCategory?: boolean;
 }
 
 export interface CategoryMeta {
@@ -41,6 +48,8 @@ export interface CategoryMeta {
     icon?: string;
     defaultOpen?: boolean;
     pages: string[];
+    isRootCategory?: boolean;
+    order?: number;
 }
 
 export async function getDocBySlug(slug: string): Promise<DocContent | null> {
@@ -130,7 +139,9 @@ export async function getCategoryMeta(categoryDir: string): Promise<CategoryMeta
             description: metaJson.description || '',
             icon: metaJson.icon,
             defaultOpen: metaJson.defaultOpen !== undefined ? metaJson.defaultOpen : false,
-            pages: metaJson.pages || []
+            pages: metaJson.pages || [],
+            isRootCategory: metaJson.isRootCategory === true,
+            order: metaJson.order || 999
         };
     } catch (error) {
         console.error(`Error reading meta.json for ${categoryDir}:`, error);
@@ -151,7 +162,9 @@ export async function getDocCategories(): Promise<DocCategory[]> {
             .filter(entry => !entry.isDirectory() && entry.name.endsWith('.md') && entry.name !== 'README.md')
             .map(entry => entry.name.replace(/\.md$/, ''));
 
-        const categories: DocCategory[] = [];
+        // Prepare arrays for both root categories and subcategories
+        const rootCategories: DocCategory[] = [];
+        const subCategories: DocCategory[] = [];
 
         // First handle root files as a special category (always first)
         if (rootFiles.length > 0) {
@@ -178,12 +191,14 @@ export async function getDocCategories(): Promise<DocCategory[]> {
             rootPages.sort((a, b) => (a.order || 999) - (b.order || 999));
 
             if (rootPages.length > 0) {
-                categories.push({
-                    title: rootMeta?.title || "Getting Started",
-                    description: rootMeta?.description || "Introduction and basic guides",
-                    icon: rootMeta?.icon,
-                    defaultOpen: rootMeta?.defaultOpen !== false,
-                    pages: rootPages
+                rootCategories.push({
+                    title: rootMeta?.title || "Base Documentation",
+                    description: rootMeta?.description || "Core documentation",
+                    icon: rootMeta?.icon || "BookOpen",
+                    defaultOpen: true, // Always open by default
+                    pages: rootPages,
+                    order: 0, // Always show first
+                    isRootCategory: rootMeta?.isRootCategory === true
                 });
             }
         }
@@ -198,36 +213,84 @@ export async function getDocCategories(): Promise<DocCategory[]> {
 
             const pages: DocPageInfo[] = [];
 
+            // Group pages by section if they have a section property in frontmatter
+            const pageSections: { [key: string]: DocPageInfo[] } = {};
+
             // Process each page in the category
             for (const pageSlug of meta.pages) {
                 const doc = await getDocBySlug(`${dir}/${pageSlug}`);
 
                 if (doc) {
-                    pages.push({
+                    const pageInfo = {
                         slug: `${dir}/${pageSlug}`,
                         title: doc.metadata.title,
                         description: doc.metadata.description,
                         icon: doc.metadata.icon,
-                        order: doc.metadata.order || 999
-                    });
+                        order: doc.metadata.order || 999,
+                        section: doc.metadata.section || 'default'
+                    };
+
+                    // Group by section
+                    if (!pageSections[pageInfo.section]) {
+                        pageSections[pageInfo.section] = [];
+                    }
+                    pageSections[pageInfo.section].push(pageInfo);
+
+                    // Also add to main pages array
+                    pages.push(pageInfo);
                 }
             }
 
-            // Sort pages by order if available
+            // Sort pages by order within each section
+            Object.values(pageSections).forEach(sectionPages => {
+                sectionPages.sort((a, b) => (a.order || 999) - (b.order || 999));
+            });
+
+            // Sort main pages by order
             pages.sort((a, b) => (a.order || 999) - (b.order || 999));
 
-            categories.push({
+            // Add section information to the category
+            const sectionsArray = Object.keys(pageSections)
+                .filter(key => key !== 'default')
+                .map(sectionKey => ({
+                    id: sectionKey,
+                    title: sectionKey, // You can enhance this by storing section metadata
+                    pages: pageSections[sectionKey]
+                }));
+
+            const category = {
                 title: meta.title,
                 description: meta.description,
                 icon: meta.icon,
                 defaultOpen: meta.defaultOpen !== undefined ? meta.defaultOpen : false,
-                pages
-            });
+                pages,
+                sections: sectionsArray.length > 0 ? sectionsArray : undefined,
+                order: meta.order || 999,
+                isRootCategory: meta.isRootCategory === true
+            };
+
+            // Sort the category into the appropriate array
+            if (meta.isRootCategory) {
+                rootCategories.push(category);
+            } else {
+                subCategories.push(category);
+            }
         }
 
-        return categories;
+        // Sort both arrays by order property
+        rootCategories.sort((a, b) => a.order! - b.order!);
+        subCategories.sort((a, b) => a.order! - b.order!);
+
+        // Return root categories followed by subcategories
+        return [...rootCategories, ...subCategories];
     } catch (error) {
         console.error("Error in getDocCategories:", error);
         return [];
     }
+}
+
+// Add a new function to get only root categories for the dropdown
+export async function getRootCategories(): Promise<DocCategory[]> {
+    const allCategories = await getDocCategories();
+    return allCategories.filter(category => category.isRootCategory === true);
 }

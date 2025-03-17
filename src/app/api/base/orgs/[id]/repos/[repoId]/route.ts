@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@root/prisma/database';
-import { errors, handleApiError, successResponse } from '@/utils/responses';
+import { errors, handleApiError, successResponse } from '@/lib/api/responses';
 
 // GET /api/base/orgs/[orgId]/repos/[repoId]
 export async function GET(

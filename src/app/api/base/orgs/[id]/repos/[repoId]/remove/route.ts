@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@root/prisma/database';
-import { errors, handleApiError } from '@/utils/responses';
+import { errors, handleApiError } from '@/lib/api/responses';
 
 // DELETE /api/base/orgs/[orgId]/repos/[repoId]/remove
 export async function DELETE(

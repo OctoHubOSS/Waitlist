@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { z } from "zod";
-import { successResponse, errors } from "@/utils/responses";
-import { validate } from "@/utils/validation";
+import { successResponse, errors } from "@/lib/api/responses";
+import { validate } from "@/lib/api/validation";
 
 // Email request schema validation
 const emailRequestSchema = z.object({

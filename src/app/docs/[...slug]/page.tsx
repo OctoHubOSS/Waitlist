@@ -2,7 +2,7 @@ import React from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { generateMetadata } from "@/utils/metadata";
-import { getDocBySlug, getAllDocs } from "@/utils/markdown";
+import { getDocBySlug, getAllDocs } from "@/utils/documentation/markdown";
 import MarkdownContent from "@/components/Docs/MarkdownContent";
 
 // Generate static paths at build time

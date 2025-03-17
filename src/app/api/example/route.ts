@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import { ApiClient } from '@/lib/api/client';
 import { ApiMiddleware } from '@/lib/api/middleware';
 import prisma from '@root/prisma/database';
-import { successResponse, errors } from "@/utils/responses";
-import { validateQuery } from "@/utils/validation";
+import { successResponse, errors } from "@/lib/api/responses";
+import { validateQuery } from "@/lib/api/validation";
 import { z } from "zod";
 
 // Create API client instance

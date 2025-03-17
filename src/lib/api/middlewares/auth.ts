@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { errors } from '@/utils/responses';
+import { errors } from '@/lib/api/responses';
 import { ApiMiddleware } from '../middleware';
 
 export type AuthConfig = {

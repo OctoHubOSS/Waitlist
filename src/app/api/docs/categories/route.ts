@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDocCategories } from '@/utils/markdown';
+import { getDocCategories } from '@/utils/documentation/markdown';
 
 export async function GET() {
     try {

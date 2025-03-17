@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import { createUser } from "@/lib/account";
 import { prisma } from "@/lib/db";
 import { sendEmail, emailTemplates } from "@/lib/email";
-import { schemas, validateBody } from "@/utils/validation";
-import { successResponse, errors, handleApiError } from "@/utils/responses";
+import { schemas, validateBody } from "@/lib/api/validation";
+import { successResponse, errors, handleApiError } from "@/lib/api/responses";
 import { z } from "zod";
 
 /**

@@ -3,9 +3,14 @@
  * For production, consider using Redis or other distributed caching solutions
  */
 
+interface CacheItem<T> {
+    value: T;
+    expiry: number;
+}
+
 // Using Node.js native caching for simplicity
 // In production, replace with Redis, Memcached, or other solution
-const cacheStore = new Map<string, { value: any; expiry: number }>();
+const cacheStore = new Map<string, CacheItem<any>>();
 
 export const cache = {
     /**
@@ -28,14 +33,11 @@ export const cache = {
     /**
      * Set a value in cache with optional TTL in seconds
      */
-    async set<T>(key: string, value: T, ttl: number = 3600): Promise<void> {
-        const expiry = Date.now() + ttl * 1000;
-        cacheStore.set(key, { value, expiry });
-
-        // Optional: Clean up expired items periodically to avoid memory leaks
-        if (cacheStore.size > 100) {
-            this.cleanup();
-        }
+    async set<T>(key: string, value: T, ttl: number = 60): Promise<void> {
+        cacheStore.set(key, {
+            value,
+            expiry: Date.now() + (ttl * 1000)
+        });
     },
 
     /**
@@ -43,6 +45,13 @@ export const cache = {
      */
     async delete(key: string): Promise<void> {
         cacheStore.delete(key);
+    },
+
+    /**
+     * Clear all values from cache
+     */
+    async clear(): Promise<void> {
+        cacheStore.clear();
     },
 
     /**
@@ -59,13 +68,6 @@ export const cache = {
         }
 
         return true;
-    },
-
-    /**
-     * Clear all cache entries
-     */
-    async clear(): Promise<void> {
-        cacheStore.clear();
     },
 
     /**

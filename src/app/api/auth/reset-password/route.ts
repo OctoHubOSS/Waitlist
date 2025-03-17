@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
-import { schemas, validateBody } from "@/utils/validation";
-import { successResponse, errors, handleApiError } from "@/utils/responses";
+import { schemas, validateBody } from "@/lib/api/validation";
+import { successResponse, errors, handleApiError } from "@/lib/api/responses";
 import { z } from "zod";
 import crypto from "crypto";
 

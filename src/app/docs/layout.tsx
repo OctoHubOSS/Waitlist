@@ -1,61 +1,82 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, Menu, Search, X } from "lucide-react";
-import { DocCategory } from "@/utils/markdown";
-import * as LucideIcons from "lucide-react";
-import * as ReactIcons from "react-icons/fa";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { Menu, X } from "lucide-react";
+import { DocCategory } from "@/utils/documentation/markdown";
+import { DocSidebar } from "@/components/Layout/Docs/DocSidebar";
+import { CategoryDropdown } from "@/components/Layout/Docs/CategoryDropdown";
+import { DocBreadcrumb } from "@/components/Layout/Docs/DocBreadcrumb";
 
 interface DocsLayoutProps {
   children: React.ReactNode;
 }
 
-// Icon component that can render icons from either Lucide or React Icons
-const IconRenderer = ({ iconName }: { iconName?: string }) => {
-  if (!iconName) return null;
-
-  // Try to use Lucide icons first
-  const LucideIcon = (LucideIcons as any)[iconName];
-  if (LucideIcon) {
-    return <LucideIcon size={18} className="mr-2" />;
-  }
-
-  // Fall back to React Icons
-  const iconPrefix = iconName.substring(0, 2);
-  const iconSet = (ReactIcons as any)[iconPrefix];
-  if (iconSet) {
-    const ReactIcon = iconSet[iconName];
-    if (ReactIcon) {
-      return <ReactIcon size={18} className="mr-2" />;
-    }
-  }
-
-  // Default fallback
-  return null;
-};
-
 export default function DocsLayout({ children }: DocsLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState<DocCategory[]>([]);
+  const [rootCategories, setRootCategories] = useState<DocCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [baseCategory, setBaseCategory] = useState<DocCategory | null>(null);
 
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const response = await fetch("/api/docs/categories");
-        const data = await response.json();
-        setCategories(data);
+        // Fetch all categories for the sidebar
+        const categoriesResponse = await fetch("/api/docs/categories");
+        const categoriesData = await categoriesResponse.json();
+        setCategories(categoriesData);
+
+        // Fetch root categories for the dropdown
+        const rootCategoriesResponse = await fetch("/api/docs/root-categories");
+        const rootCategoriesData = await rootCategoriesResponse.json();
+        setRootCategories(rootCategoriesData);
 
         // Set initially expanded sections based on defaultOpen in meta
-        const defaultOpenSections = data
+        const defaultOpenSections = categoriesData
           .filter((category: any) => category.defaultOpen)
           .map((category: any) => category.title);
         setExpandedSections(defaultOpenSections);
+
+        // Find base category for root docs
+        const baseDoc = categoriesData.find((cat: DocCategory) =>
+          !cat.title.includes('/') && !cat.isRootCategory);
+
+        if (baseDoc) {
+          setBaseCategory(baseDoc);
+        }
+
+        // If we're at the root /docs path, automatically select the base category
+        if (pathname === '/docs') {
+          setSelectedCategory(baseDoc?.title || null);
+        }
+
+        // Find currently active category based on pathname
+        if (pathname) {
+          const segments = pathname.split('/');
+          if (segments.length > 2) {
+            const categoryPath = segments[2]; // Gets the category from /docs/[category]
+            const foundCategory = categoriesData.find((cat: DocCategory) =>
+              cat.pages.some(page => page.slug.startsWith(categoryPath + '/'))
+            );
+
+            if (foundCategory) {
+              setSelectedCategory(foundCategory.title);
+
+              // Make sure the section is expanded
+              if (!defaultOpenSections.includes(foundCategory.title)) {
+                setExpandedSections(prev => [...prev, foundCategory.title]);
+              }
+            }
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch categories:", error);
       } finally {
@@ -64,7 +85,7 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
     }
 
     fetchCategories();
-  }, []);
+  }, [pathname]);
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) =>
@@ -78,44 +99,30 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
   const currentPagePath = pathname.split("/").filter(Boolean);
   const currentSlug = currentPagePath[currentPagePath.length - 1];
 
-  // Check if it's a categorized path
-  const slug = currentPagePath.length > 2 ? currentPagePath[1] : null;
-
   // Find the current page info
   let currentPage;
-  if (slug) {
-    // Look for page in the specified category
+  if (currentPagePath.length > 2) {
+    // Look for page in the specific category
     const category = categories.find((c) =>
-      c.pages.some(
-        (p) =>
-          p.slug.startsWith(`${slug}/`) && p.slug.endsWith(`/${currentSlug}`),
-      ),
+      c.pages.some(p => p.slug.includes(`/${currentSlug}`))
     );
-    currentPage = category?.pages.find((p) =>
-      p.slug.endsWith(`/${currentSlug}`),
-    );
-  } else {
-    // Look for page in all categories
-    for (const category of categories) {
-      const page = category.pages.find((p) => p.slug === currentSlug);
-      if (page) {
-        currentPage = page;
-        break;
-      }
+
+    currentPage = category?.pages.find((p) => p.slug.includes(`/${currentSlug}`));
+  } else if (currentPagePath.length === 2) {
+    // It's a root-level doc (directly under /docs)
+    const page = categories
+      .flatMap(cat => cat.pages)
+      .find(p => p.slug === currentSlug);
+
+    if (page) {
+      currentPage = page;
     }
   }
 
-  // Filter navigation based on search query
-  const filteredCategories = searchQuery
-    ? categories
-      .map((category) => ({
-        ...category,
-        pages: category.pages.filter((page) =>
-          page.title.toLowerCase().includes(searchQuery.toLowerCase()),
-        ),
-      }))
-      .filter((category) => category.pages.length > 0)
-    : categories;
+  // Find current root category
+  const currentRootCategory = rootCategories.find(cat =>
+    selectedCategory === cat.title || pathname.includes(`/docs/${cat.title.toLowerCase().replace(/\s+/g, '-')}`)
+  );
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full">
@@ -127,7 +134,7 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
         />
       )}
 
-      {/* Mobile header */}
+      {/* Mobile header with dropdown */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-github-border sticky top-0 bg-github-dark z-10">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -135,8 +142,17 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
         >
           <Menu size={24} />
         </button>
-        <h1 className="text-lg font-semibold text-white">Documentation</h1>
-        <div className="w-8"></div> {/* Empty div to balance the layout */}
+
+        <CategoryDropdown
+          rootCategories={rootCategories}
+          currentRootCategory={currentRootCategory}
+          onSelectCategory={setSelectedCategory}
+          isOpen={dropdownOpen}
+          setIsOpen={setDropdownOpen}
+          isMobile={true}
+        />
+
+        <div className="w-10"></div> {/* Empty div to balance the layout */}
       </div>
 
       {/* Sidebar */}
@@ -151,8 +167,15 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
         `}
       >
         <div className="p-6">
-          <div className="flex items-center justify-between mb-3">
-            <h1 className="text-xl font-bold text-white">Documentation</h1>
+          <div className="flex items-center justify-between mb-5">
+            <CategoryDropdown
+              rootCategories={rootCategories}
+              currentRootCategory={currentRootCategory}
+              onSelectCategory={setSelectedCategory}
+              isOpen={dropdownOpen}
+              setIsOpen={setDropdownOpen}
+            />
+
             <button
               onClick={() => setSidebarOpen(false)}
               className="p-2 rounded-md text-gray-400 hover:bg-gray-800 md:hidden focus:outline-none"
@@ -161,96 +184,23 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
             </button>
           </div>
 
-          {/* Search input */}
-          <div className="relative mb-3">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} className="text-gray-500" />
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search documentation..."
-              className="w-full py-2 pl-10 pr-3 bg-github-dark-secondary border border-github-border rounded-md text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-github-accent focus:border-github-accent"
-            />
-          </div>
-
-          {isLoading ? (
-            <div className="text-gray-400 text-sm">Loading navigation...</div>
-          ) : (
-            <nav>
-              {filteredCategories.map((category, idx) => (
-                <div key={idx} className="mb-2">
-                  <button
-                    className="flex items-center justify-between w-full text-sm font-semibold text-gray-400 uppercase tracking-wider py-2 hover:text-white focus:outline-none"
-                    onClick={() => toggleSection(category.title)}
-                    aria-expanded={expandedSections.includes(category.title)}
-                  >
-                    <span className="flex items-center">
-                      <IconRenderer iconName={category.icon} />
-                      {category.title}
-                    </span>
-                    {expandedSections.includes(category.title) ? (
-                      <ChevronDown size={18} />
-                    ) : (
-                      <ChevronRight size={18} />
-                    )}
-                  </button>
-
-                  {expandedSections.includes(category.title) && (
-                    <ul className="pl-2 border-l border-gray-800">
-                      {category.pages.map((page) => {
-                        const isActive = pathname === `/docs/${page.slug}`;
-                        return (
-                          <li key={page.slug}>
-                            <Link
-                              href={`/docs/${page.slug}`}
-                              className={`
-                                flex items-center px-3 py-2 text-sm rounded-md transition-colors
-                                ${isActive
-                                  ? "bg-github-accent/10 text-github-accent border-l-2 border-github-accent -ml-[2px]"
-                                  : "text-gray-300 hover:text-white hover:bg-gray-800"
-                                }
-                              `}
-                              onClick={() => setSidebarOpen(false)}
-                            >
-                              {page.icon && (
-                                <IconRenderer iconName={page.icon} />
-                              )}
-                              {page.title}
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </nav>
-          )}
+          <DocSidebar
+            categories={categories}
+            selectedCategory={selectedCategory}
+            baseCategory={baseCategory}
+            onCategorySelect={setSelectedCategory}
+            isLoading={isLoading}
+            searchQuery={searchQuery}
+            onSearch={setSearchQuery}
+            onSidebarClose={() => setSidebarOpen(false)}
+          />
         </div>
       </aside>
 
       {/* Main content - Modified to be full width */}
       <main className="flex-1 bg-github-dark w-full">
         {/* Breadcrumb navigation */}
-        <div className="bg-github-dark border-b border-github-border p-4">
-          <div className="w-full max-w-none">
-            <div className="text-sm text-gray-400 flex items-center">
-              <Link href="/docs" className="hover:text-white">
-                Docs
-              </Link>
-              {currentPage && (
-                <>
-                  <span className="mx-2">/</span>
-                  <span className="text-white font-medium">
-                    {currentPage.title}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+        <DocBreadcrumb currentPage={currentPage} />
 
         <div className="p-4 md:p-6 w-full max-w-none">{children}</div>
       </main>

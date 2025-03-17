@@ -123,6 +123,10 @@ model User {
     auditLogsAsActor AuditLog[] @relation("AuditLogActor")
     auditLogs        AuditLog[] @relation("UserAuditLogs")
 
+    // Trending relation
+    trending      TrendingEntity[]
+    SearchSession SearchSession[]
+
     @@index([email, status])
     @@index([githubUsername, githubId])
     @@index([lastActiveAt, status])
@@ -173,6 +177,9 @@ model Organization {
 
     // Audit log relation
     auditLogs AuditLog[] @relation("OrganizationAuditLogs")
+
+    // Trending relation
+    trending TrendingEntity[]
 
     @@unique([name])
     @@index([name])
@@ -287,6 +294,9 @@ model Repository {
 
     // Audit log relation
     auditLogs AuditLog[] @relation("RepositoryAuditLogs")
+
+    // Trending relation
+    trending TrendingEntity[]
 
     // Optimized compound indexes
     @@unique([orgId, name])
@@ -1538,4 +1548,273 @@ model RateLimitRule {
 
     @@unique([endpoint, method])
     @@index([endpoint])
+}
+
+// Platform-wide statistics tracking
+model PlatformStats {
+    id        String   @id @default(cuid())
+    timestamp DateTime @default(now())
+
+    // User statistics
+    totalUsers    Int @default(0)
+    activeUsers   Int @default(0) // Users active in last 30 days
+    newUsers      Int @default(0) // New users in last 24 hours
+    verifiedUsers Int @default(0)
+    deletedUsers  Int @default(0)
+
+    // Organization statistics
+    totalOrgs    Int @default(0)
+    activeOrgs   Int @default(0)
+    newOrgs      Int @default(0)
+    verifiedOrgs Int @default(0)
+    deletedOrgs  Int @default(0)
+
+    // Repository statistics
+    totalRepos   Int @default(0)
+    activeRepos  Int @default(0) // Repos with activity in last 30 days
+    newRepos     Int @default(0)
+    publicRepos  Int @default(0)
+    privateRepos Int @default(0)
+    deletedRepos Int @default(0)
+
+    // Activity statistics
+    totalStars    Int @default(0)
+    totalForks    Int @default(0)
+    totalIssues   Int @default(0)
+    totalPRs      Int @default(0)
+    totalCommits  Int @default(0)
+    totalComments Int @default(0)
+
+    // API Usage
+    totalApiCalls   Int   @default(0)
+    uniqueApiUsers  Int   @default(0)
+    avgResponseTime Float @default(0)
+    errorRate       Float @default(0)
+
+    // Search statistics
+    totalSearches   Int   @default(0)
+    uniqueSearchers Int   @default(0)
+    avgSearchTime   Float @default(0)
+
+    // Storage statistics
+    totalStorageUsed BigInt @default(0) // in bytes
+    totalPackages    Int    @default(0)
+    totalReleases    Int    @default(0)
+
+    // Time periods
+    period    StatsPeriod @default(DAILY)
+    startTime DateTime
+    endTime   DateTime
+
+    @@unique([period, startTime]) // Ensure one record per period
+    @@index([timestamp])
+    @@index([period])
+}
+
+// Trending entities tracking
+model TrendingEntity {
+    id       String         @id @default(cuid())
+    type     TrendingType
+    entityId String // ID of the user/org/repo
+    score    Float // Trending score
+    rank     Int // Current rank in the trending list
+    period   TrendingPeriod @default(DAILY)
+
+    // Metrics that contribute to trending score
+    viewCount        Int   @default(0)
+    starCount        Int   @default(0)
+    forkCount        Int   @default(0)
+    contributorCount Int   @default(0)
+    activityScore    Float @default(0)
+
+    // Time tracking
+    timestamp DateTime @default(now())
+    startTime DateTime
+    endTime   DateTime
+
+    // Relations - only one should be set based on type
+    userId         String?
+    user           User?         @relation(fields: [userId], references: [id])
+    repositoryId   String?
+    repository     Repository?   @relation(fields: [repositoryId], references: [id])
+    organizationId String?
+    organization   Organization? @relation(fields: [organizationId], references: [id])
+
+    @@unique([type, period, entityId, startTime])
+    @@index([type, period, rank])
+    @@index([score])
+    @@index([timestamp])
+}
+
+// Add new enums for statistics
+enum StatsPeriod {
+    HOURLY
+    DAILY
+    WEEKLY
+    MONTHLY
+    YEARLY
+}
+
+enum TrendingPeriod {
+    DAILY
+    WEEKLY
+    MONTHLY
+}
+
+enum TrendingType {
+    USER
+    ORGANIZATION
+    REPOSITORY
+}
+
+// Search analytics and performance tracking
+model SearchAnalytics {
+    id        String      @id @default(cuid())
+    timestamp DateTime    @default(now())
+    period    StatsPeriod @default(HOURLY)
+
+    // Time range
+    startTime DateTime
+    endTime   DateTime
+
+    // Volume metrics
+    totalSearches         Int @default(0)
+    uniqueUsers           Int @default(0)
+    authenticatedSearches Int @default(0)
+    anonymousSearches     Int @default(0)
+
+    // Performance metrics
+    avgResponseTime Float @default(0) // in milliseconds
+    p50ResponseTime Float @default(0)
+    p90ResponseTime Float @default(0)
+    p95ResponseTime Float @default(0)
+    p99ResponseTime Float @default(0)
+    maxResponseTime Float @default(0)
+    minResponseTime Float @default(0)
+
+    // Quality metrics
+    avgResultCount   Float @default(0)
+    zeroResultCount  Int   @default(0)
+    clickthroughRate Float @default(0)
+    bounceRate       Float @default(0)
+
+    // Cache performance
+    cacheHitRate    Float @default(0)
+    cacheMissRate   Float @default(0)
+    avgCacheLatency Float @default(0)
+
+    // Error metrics
+    errorCount   Int   @default(0)
+    errorRate    Float @default(0)
+    timeoutCount Int   @default(0)
+
+    // Popular searches
+    topQueries Json? // Array of most common search queries
+    topFilters Json? // Array of most used filters
+
+    @@unique([period, startTime])
+    @@index([timestamp])
+    @@index([period])
+}
+
+// Individual search session tracking
+model SearchSession {
+    id        String   @id @default(cuid())
+    timestamp DateTime @default(now())
+
+    // Search context
+    userId    String?
+    user      User?   @relation(fields: [userId], references: [id])
+    sessionId String? // Browser session ID
+    sourceIp  String?
+    userAgent String? @db.Text
+    referer   String?
+
+    // Search parameters
+    query         String  @db.Text
+    filters       Json? // Applied filters
+    page          Int     @default(1)
+    perPage       Int     @default(20)
+    sortBy        String?
+    sortDirection String?
+
+    // Results
+    totalResults    Int
+    returnedResults Int
+    executionTimeMs Int // Total execution time in milliseconds
+    cacheHit        Boolean @default(false)
+    errorOccurred   Boolean @default(false)
+    errorMessage    String? @db.Text
+
+    // User interaction
+    firstClickTime  Int? // Time to first click in ms
+    totalClicks     Int  @default(0)
+    scrollDepth     Int? // How far user scrolled
+    sessionDuration Int? // Total session time in ms
+    refinements     Int  @default(0) // Number of search refinements
+
+    // Relations
+    clicks            SearchSessionClick[]
+    refinementQueries SearchRefinement[]
+
+    @@index([userId])
+    @@index([timestamp])
+    @@index([query(length: 256)])
+    @@index([errorOccurred])
+}
+
+// Track clicks within a search session
+model SearchSessionClick {
+    id        String   @id @default(cuid())
+    timestamp DateTime @default(now())
+
+    // Click context
+    sessionId     String
+    session       SearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+    position      Int // Position in results (1-based)
+    timeToClickMs Int // Time from search to click in ms
+
+    // What was clicked
+    resultType String // "repository", "user", "org", etc
+    resultId   String // ID of the clicked item
+
+    // Additional context
+    isRelevant  Boolean? // If we know whether click was relevant
+    dwellTimeMs Int? // Time spent on result page
+
+    @@index([sessionId])
+    @@index([timestamp])
+    @@index([resultType, resultId])
+}
+
+// Track search query refinements
+model SearchRefinement {
+    id        String   @id @default(cuid())
+    timestamp DateTime @default(now())
+
+    // Refinement context
+    sessionId String
+    session   SearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+    sequence  Int // Sequence number in refinement chain
+
+    // Changes made
+    originalQuery  String               @db.Text
+    refinedQuery   String               @db.Text
+    addedFilters   Json?
+    removedFilters Json?
+    changeType     SearchRefinementType
+
+    @@index([sessionId])
+    @@index([timestamp])
+}
+
+// Add new enum for refinement types
+enum SearchRefinementType {
+    QUERY_MODIFICATION // User modified the search terms
+    FILTER_ADDED // User added filters
+    FILTER_REMOVED // User removed filters
+    SORT_CHANGED // User changed sort order
+    PAGINATION // User changed page
+    SUGGESTION_APPLIED // User applied a search suggestion
+    SPELL_CORRECTION // Spelling correction applied
 }

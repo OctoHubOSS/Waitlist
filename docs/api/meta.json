@@ -2,6 +2,7 @@
   "title": "API Reference",
   "description": "Comprehensive documentation for OctoSearch API endpoints",
   "defaultOpen": false,
+  "isRootCategory": true,
   "icon": "Code",
   "pages": [
     "overview",

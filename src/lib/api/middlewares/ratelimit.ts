@@ -101,6 +101,11 @@ export function createRateLimitMiddleware(
  * Default identifier function that uses IP address
  */
 function getDefaultIdentifier(req: NextRequest): string {
+    // Safely check if headers exists
+    if (!req?.headers) {
+        return 'ip:unknown';
+    }
+
     // Try to get IP from various headers
     const xff = req.headers.get('x-forwarded-for');
     const realIp = req.headers.get('x-real-ip');
@@ -108,4 +113,4 @@ function getDefaultIdentifier(req: NextRequest): string {
     // Use the first IP from x-forwarded-for, or x-real-ip, or default to localhost
     const ip = xff?.split(',')[0] ?? realIp ?? '127.0.0.1';
     return `ip:${ip}`;
-} 
+}

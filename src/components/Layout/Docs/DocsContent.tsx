@@ -35,11 +35,10 @@ export default function DocsContent({ content }: MarkdownRendererProps) {
               return match ? (
                 <SyntaxHighlighter
                   language={match[1]}
-                  style={vscDarkPlus}
+                  style={vscDarkPlus as any}
                   PreTag="div"
                   showLineNumbers
                   className="w-full max-w-none"
-                  {...props}
                 >
                   {String(children).replace(/\n$/, "")}
                 </SyntaxHighlighter>

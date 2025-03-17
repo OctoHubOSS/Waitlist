@@ -1,4 +1,4 @@
-import { successResponse } from "@/utils/responses";
+import { successResponse } from "@/lib/api/responses";
 
 export async function GET(request: Request) {
     return successResponse({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@root/prisma/database';
-import { errors, handleApiError, successResponse } from '@/utils/responses';
+import { errors, handleApiError, successResponse } from '@/lib/api/responses';
 import { z } from 'zod';
 import { createHash } from 'crypto';
 

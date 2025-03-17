@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@root/prisma/database';
-import { validateBody } from '@/utils/validation';
-import { successResponse, errors, handleApiError } from '@/utils/responses';
+import { validateBody } from '@/lib/api/validation';
+import { successResponse, errors, handleApiError } from '@/lib/api/responses';
 import { z } from 'zod';
 
 // Validation schema

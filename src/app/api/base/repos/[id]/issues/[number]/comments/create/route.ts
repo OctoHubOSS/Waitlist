@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@root/prisma/database';
-import { validateBody } from '@/utils/validation';
-import { errors, handleApiError, successResponse } from '@/utils/responses';
+import { validateBody } from '@/lib/api/validation';
+import { errors, handleApiError, successResponse } from '@/lib/api/responses';
 import { z } from 'zod';
 
 const createCommentSchema = z.object({

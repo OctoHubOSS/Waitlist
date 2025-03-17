@@ -1,5 +1,5 @@
 import { version } from "@root/package.json";
-import { successResponse } from "@/utils/responses";
+import { successResponse } from "@/lib/api/responses";
 
 export async function GET() {
     return successResponse({

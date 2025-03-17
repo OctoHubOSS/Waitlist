@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { unlinkGithubAccount } from "@/lib/account";
-import { successResponse, errors, handleApiError } from "@/utils/responses";
+import { successResponse, errors, handleApiError } from "@/lib/api/responses";
 
 /**
  * POST /api/auth/unlink-github

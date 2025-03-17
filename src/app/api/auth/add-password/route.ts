@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { NextRequest } from "next/server";
-import { schemas, validateBody } from "@/utils/validation";
+import { schemas, validateBody } from "@/lib/api/validation";
 import { addPasswordToAccount, hasPasswordAuth } from "@/lib/account";
-import { successResponse, errors, handleApiError } from "@/utils/responses";
+import { successResponse, errors, handleApiError } from "@/lib/api/responses";
 
 /**
  * POST /api/auth/add-password

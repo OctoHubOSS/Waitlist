@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@root/prisma/database';
-import { successResponse, errors, handleApiError } from '@/utils/responses';
+import { successResponse, errors, handleApiError } from '@/lib/api/responses';
 
 // DELETE /api/base/repositories/[id]/delete
 export async function DELETE(

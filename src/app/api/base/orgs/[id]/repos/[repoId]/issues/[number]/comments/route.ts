@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@root/prisma/database';
-import { validateQuery, validateBody } from '@/utils/validation';
-import { errors, handleApiError, successResponse } from '@/utils/responses';
+import { validateQuery, validateBody } from '@/lib/api/validation';
+import { errors, handleApiError, successResponse } from '@/lib/api/responses';
 import { z } from 'zod';
 
 const querySchema = z.object({

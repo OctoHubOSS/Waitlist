@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import prisma from '@root/prisma/database';
-import { validateQuery } from '@/utils/validation';
-import { errors, handleApiError, paginatedResponse } from '@/utils/responses';
+import { validateQuery } from '@/lib/api/validation';
+import { errors, handleApiError, paginatedResponse } from '@/lib/api/responses';
 import { z } from 'zod';
 import { ApiClient } from '@/lib/api/client';
 import { withOptionalAuth } from '@/lib/api/middlewares/auth';
