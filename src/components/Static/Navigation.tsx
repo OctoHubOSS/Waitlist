@@ -176,7 +176,7 @@ export default function Navigation() {
             src="/logo.webp"
           />
         </div>
-        <span>OctoSearch</span>
+        <span>OctoHub</span>
       </Link>
 
       {/* Mobile menu button */}

@@ -91,3 +91,79 @@ export interface TokenContext {
         checkAllScopes: (token: TokenWithOwner, requiredScopes: string[]) => boolean;
     };
 }
+
+/**
+ * Authentication response
+ */
+export interface AuthResponse {
+    success: boolean;
+    error?: string;
+    user?: {
+        id: string;
+        email: string;
+        name?: string | null;
+        image?: string | null;
+        githubUsername?: string | null;
+    };
+}
+
+/**
+ * Registration request
+ */
+export interface RegisterRequest {
+    email: string;
+    password: string;
+    name?: string;
+}
+
+/**
+ * Login request
+ */
+export interface LoginRequest {
+    email: string;
+    password: string;
+}
+
+/**
+ * Password reset request
+ */
+export interface PasswordResetRequest {
+    email: string;
+}
+
+/**
+ * Password change request
+ */
+export interface PasswordChangeRequest {
+    currentPassword: string;
+    newPassword: string;
+}
+
+/**
+ * GitHub account linking request
+ */
+export interface GitHubLinkRequest {
+    code: string;
+}
+
+/**
+ * Session user with extended properties
+ */
+export interface SessionUser {
+    id: string;
+    email: string;
+    name?: string | null;
+    image?: string | null;
+    role?: string;
+    isAdmin?: boolean;
+    githubUsername?: string | null;
+    githubId?: string | null;
+}
+
+/**
+ * Extended session type
+ */
+export interface ExtendedSession {
+    user?: SessionUser;
+    expires: string;
+}

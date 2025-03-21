@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { generateMetadata } from "@/utils/metadata";
 import Navigation from "@/components/Static/Navigation";
 import Footer from "@/components/Static/Footer";
-import AuthProvider from "@/components/Auth/AuthProvider";
+import { AuthProvider } from "@/components/Auth/AuthProvider";
 
 export const metadata: Metadata = generateMetadata({});
 

@@ -4,7 +4,7 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaGithub, FaKey } from "react-icons/fa";
+import { FaGithub, FaEnvelope } from "react-icons/fa";
 import { TbLoader2 } from "react-icons/tb";
 import { HiExclamationCircle } from "react-icons/hi";
 import Link from "next/link";
@@ -15,15 +15,36 @@ export default function SignIn() {
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const error = searchParams.get("error");
   const [isLoading, setIsLoading] = useState(false);
+  const [authMethod, setAuthMethod] = useState<"github" | "credentials">("credentials");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const handleGitHubSignIn = async () => {
+    if (!acceptedTerms) {
+      return;
+    }
     setIsLoading(true);
     await signIn("github", { callbackUrl });
   };
 
+  const handleCredentialsSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!acceptedTerms) {
+      return;
+    }
+    setIsLoading(true);
+    await signIn("credentials", {
+      email,
+      password,
+      callbackUrl,
+      redirect: false,
+    });
+  };
+
   // Error messages mapping
   const errorMessages: Record<string, string> = {
-    CredentialsSignin: "Invalid sign in credentials. Please try again.",
+    CredentialsSignin: "Invalid email or password. Please try again.",
     OAuthSignin: "Error during OAuth sign in. Please try again.",
     OAuthCallback: "Error during OAuth callback. Please try again.",
     OAuthCreateAccount: "Could not create OAuth account. Please try again.",
@@ -114,14 +135,14 @@ export default function SignIn() {
           >
             Sign in to{" "}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-github-link to-github-accent">
-              OctoSearch
+              OctoHub
             </span>
           </motion.h2>
           <motion.p
             className="mt-2 text-center text-github-text-secondary"
             variants={itemVariants}
           >
-            Use your GitHub account to access enhanced features
+            Choose your preferred sign-in method
           </motion.p>
         </motion.div>
 
@@ -146,54 +167,183 @@ export default function SignIn() {
           )}
         </AnimatePresence>
 
-        <motion.div className="mt-8" variants={itemVariants}>
-          <motion.button
-            onClick={handleGitHubSignIn}
-            disabled={isLoading}
-            className={`group relative w-full flex justify-center py-4 px-4 border border-github-border bg-gradient-to-r from-black to-github-dark-secondary text-sm font-medium rounded-xl text-white hover:border-github-link focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-github-accent focus:ring-offset-github-dark ${
-              isLoading ? "opacity-70 cursor-not-allowed" : ""
-            }`}
-            whileHover={{
-              scale: 1.01,
-              boxShadow: "0 0 15px rgba(88, 166, 255, 0.2)",
-              borderColor: "rgba(88, 166, 255, 0.5)",
-            }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ duration: 0.2 }}
+        {/* Auth method selector */}
+        <motion.div className="flex justify-center space-x-4" variants={itemVariants}>
+          <button
+            onClick={() => setAuthMethod("credentials")}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${authMethod === "credentials"
+              ? "bg-github-dark-secondary text-white border border-github-link"
+              : "text-github-text-secondary hover:text-white"
+              }`}
           >
-            <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-              <FaGithub className="h-5 w-5 text-gray-400 group-hover:text-github-link transition-colors" />
-            </span>
-            {isLoading ? (
-              <div className="flex items-center">
-                <TbLoader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                Signing in...
-              </div>
-            ) : (
-              "Sign in with GitHub"
-            )}
-          </motion.button>
+            Email
+          </button>
+          <button
+            onClick={() => setAuthMethod("github")}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${authMethod === "github"
+              ? "bg-github-dark-secondary text-white border border-github-link"
+              : "text-github-text-secondary hover:text-white"
+              }`}
+          >
+            GitHub
+          </button>
         </motion.div>
 
-        {/* New section for API tokens */}
-        <motion.div 
-          className="mt-6 pt-6 border-t border-github-border"
+        {/* GitHub Sign In */}
+        <AnimatePresence mode="wait">
+          {authMethod === "github" && (
+            <motion.div
+              key="github"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="mt-8"
+            >
+              <motion.button
+                onClick={handleGitHubSignIn}
+                disabled={isLoading}
+                className={`group relative w-full flex justify-center py-4 px-4 border border-github-border bg-gradient-to-r from-black to-github-dark-secondary text-sm font-medium rounded-xl text-white hover:border-github-link focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-github-accent focus:ring-offset-github-dark ${isLoading ? "opacity-70 cursor-not-allowed" : ""
+                  }`}
+                whileHover={{
+                  scale: 1.01,
+                  boxShadow: "0 0 15px rgba(88, 166, 255, 0.2)",
+                  borderColor: "rgba(88, 166, 255, 0.5)",
+                }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                  <FaGithub className="h-5 w-5 text-gray-400 group-hover:text-github-link transition-colors" />
+                </span>
+                {isLoading ? (
+                  <div className="flex items-center">
+                    <TbLoader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
+                    Signing in...
+                  </div>
+                ) : (
+                  "Sign in with GitHub"
+                )}
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* Email/Password Sign In */}
+          {authMethod === "credentials" && (
+            <motion.form
+              key="credentials"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              onSubmit={handleCredentialsSignIn}
+              className="mt-8 space-y-6"
+            >
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-github-text-secondary">
+                    Email address
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="off"
+                    placeholder="example@octohub.dev"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 bg-github-dark-secondary border border-github-border rounded-lg text-white placeholder-github-text-secondary focus:outline-none focus:ring-2 focus:ring-github-accent focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-github-text-secondary">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 bg-github-dark-secondary border border-github-border rounded-lg text-white placeholder-github-text-secondary focus:outline-none focus:ring-2 focus:ring-github-accent focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm">
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-github-link hover:text-github-link-hover"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
+                <div className="text-sm">
+                  <Link
+                    href="/auth/register"
+                    className="text-github-link hover:text-github-link-hover"
+                  >
+                    Create an account
+                  </Link>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading || !acceptedTerms}
+                className={`w-full flex justify-center py-4 px-4 border border-github-border bg-gradient-to-r from-black to-github-dark-secondary text-sm font-medium rounded-xl text-white hover:border-github-link focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-github-accent focus:ring-offset-github-dark ${(isLoading || !acceptedTerms) ? "opacity-70 cursor-not-allowed" : ""
+                  }`}
+              >
+                {isLoading ? (
+                  <div className="flex items-center">
+                    <TbLoader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
+                    Signing in...
+                  </div>
+                ) : (
+                  "Sign in with Email"
+                )}
+              </button>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        {/* Legal Policy Agreement */}
+        <motion.div
+          className="mt-8 flex space-x-3 items-center justify-center"
           variants={itemVariants}
         >
-          <div className="flex items-center justify-center mb-4">
-            <FaKey className="text-github-text-secondary mr-2" />
-            <h3 className="text-github-text-secondary font-medium">API Access</h3>
+          <div className="flex items-center h-5">
+            <input
+              id="terms"
+              name="terms"
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="h-4 w-4 rounded border-github-border bg-github-dark-secondary text-github-accent focus:ring-github-accent"
+            />
           </div>
-          <p className="text-xs text-github-text-secondary text-center mb-4">
-            Need programmatic access? Use API tokens instead of your account credentials.
-          </p>
-          <div className="flex justify-center">
-            <Link
-              href="/settings/tokens"
-              className="text-sm text-github-link hover:text-github-accent transition-colors"
-            >
-              Manage API Tokens
-            </Link>
+          <div className="text-sm text-github-text-secondary">
+            <label htmlFor="terms" className="font-medium">
+              I agree to the{" "}
+              <Link
+                href="/legal/terms"
+                className="text-github-link hover:text-github-link-hover"
+              >
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/legal/privacy"
+                className="text-github-link hover:text-github-link-hover"
+              >
+                Privacy Policy
+              </Link>
+            </label>
           </div>
         </motion.div>
 
@@ -204,16 +354,6 @@ export default function SignIn() {
           >
             Return to home page
           </Link>
-        </motion.div>
-
-        {/* Additional decorative elements */}
-        <motion.div
-          className="mt-16 text-center text-xs text-github-text-secondary/60"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.8 }}
-        >
-          Searching GitHub repositories made simple
         </motion.div>
       </motion.div>
 

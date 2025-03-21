@@ -87,7 +87,7 @@ export const authOptions: NextAuthOptions = {
       // Add user ID to the session
       if (session.user) {
         session.user.id = user?.id || token?.sub || "";
-        
+
         // Add additional user properties if available
         if (user) {
           // Check if user has admin role
@@ -95,7 +95,7 @@ export const authOptions: NextAuthOptions = {
             where: { id: user.id },
             select: { role: true }
           });
-          
+
           if (dbUser && dbUser.role === 'ADMIN') {
             session.user.isAdmin = true;
           }
@@ -106,13 +106,13 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        
+
         // Add additional properties if user has a role
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: { role: true }
         });
-        
+
         if (dbUser && dbUser.role === 'ADMIN') {
           token.isAdmin = true;
         }
@@ -195,3 +195,51 @@ export const isAuthenticated = async () => {
   const session = await getSession();
   return !!session?.user;
 };
+
+// Password validation utilities
+export const PASSWORD_REQUIREMENTS = {
+  minLength: 8,
+  maxLength: 128,
+  requireUppercase: true,
+  requireLowercase: true,
+  requireNumbers: true,
+  requireSpecialChars: true,
+} as const;
+
+export interface PasswordValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
+
+export function validatePassword(password: string): PasswordValidationResult {
+  const errors: string[] = [];
+
+  if (password.length < PASSWORD_REQUIREMENTS.minLength) {
+    errors.push(`Password must be at least ${PASSWORD_REQUIREMENTS.minLength} characters long`);
+  }
+
+  if (password.length > PASSWORD_REQUIREMENTS.maxLength) {
+    errors.push(`Password must not exceed ${PASSWORD_REQUIREMENTS.maxLength} characters`);
+  }
+
+  if (PASSWORD_REQUIREMENTS.requireUppercase && !/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+
+  if (PASSWORD_REQUIREMENTS.requireLowercase && !/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+
+  if (PASSWORD_REQUIREMENTS.requireNumbers && !/\d/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+
+  if (PASSWORD_REQUIREMENTS.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    errors.push('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
