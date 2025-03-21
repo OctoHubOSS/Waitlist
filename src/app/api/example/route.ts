@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
 import { ApiClient } from '@/lib/api/client';
 import { ApiMiddleware } from '@/lib/api/middleware';
+import { createRateLimitMiddleware } from '@/lib/api/middlewares/ratelimit';
+import { RateLimitClient } from '@/lib/ratelimit/client';
+import { CachedRateLimitClient } from '@/lib/ratelimit/cache';
 import prisma from '@root/prisma/database';
 import { successResponse, errors } from "@/lib/api/responses";
 import { validateQuery } from "@/lib/api/validation";
@@ -27,8 +30,44 @@ const withTiming: ApiMiddleware = (handler) => async (context) => {
     return response;
 };
 
-// Add timing middleware to the API client
+// Configure rate limiting
+const rateLimitClient = new RateLimitClient({
+    defaultRule: {
+        limit: 100,
+        window: 3600, // 1 hour
+        blockFor: 300, // 5 minutes
+        tokenLimit: 1000,
+        tokenWindow: 3600
+    },
+    rules: [
+        {
+            // Higher limit for GET requests
+            method: 'GET',
+            limit: 200,
+            window: 3600
+        },
+        {
+            // Lower limit for POST requests
+            method: 'POST',
+            limit: 50,
+            window: 3600
+        }
+    ]
+});
+
+// Add cache layer to reduce database hits
+const cachedRateLimiter = new CachedRateLimitClient(rateLimitClient, {
+    ttl: 5000 // 5 seconds cache
+});
+
+// Create rate limit middleware
+const withRateLimit = createRateLimitMiddleware(cachedRateLimiter, {
+    includeHeaders: true
+});
+
+// Add middlewares to the API client
 api.use(withTiming);
+api.use(withRateLimit);
 
 export async function GET(req: NextRequest) {
     try {
@@ -77,4 +116,4 @@ export async function POST(req: NextRequest) {
         console.error("Error processing request:", err);
         return errors.badRequest(err.message);
     }
-} 
+}

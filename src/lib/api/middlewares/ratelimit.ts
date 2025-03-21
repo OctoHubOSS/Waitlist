@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiMiddleware } from '../middleware';
+import { RateLimitClient } from '@/lib/ratelimit/client';
 import { CachedRateLimitClient } from '@/lib/ratelimit/cache';
-import { RateLimitOptions } from '@/types/ratelimit';
+import { RateLimitContext } from '@/types/ratelimit';
 import { getToken } from '@/lib/auth/token';
 
-export interface RateLimitMiddlewareOptions extends RateLimitOptions {
+// Type for both types of rate limit clients
+type RateLimitClientType = RateLimitClient | CachedRateLimitClient;
+
+export interface RateLimitMiddlewareOptions {
     /**
      * Custom identifier function to determine rate limit key
-     * Defaults to IP address for anonymous users and user ID for authenticated users
+     * Defaults to IP address for anonymous users
      */
     getIdentifier?: (req: NextRequest) => string | Promise<string>;
 
@@ -24,18 +28,19 @@ export interface RateLimitMiddlewareOptions extends RateLimitOptions {
     includeMethod?: boolean;
 
     /**
-     * Headers to include in the response
+     * Whether to include rate limit headers in the response
      * Defaults to true
      */
     includeHeaders?: boolean;
 }
 
 /**
- * Create a rate limit middleware
+ * Create a middleware function for API rate limiting
+ * This is a thin wrapper around the core RateLimitClient implementation
  */
 export function createRateLimitMiddleware(
-    client: CachedRateLimitClient,
-    options: RateLimitMiddlewareOptions
+    rateLimiter: RateLimitClientType,
+    options: RateLimitMiddlewareOptions = {}
 ): ApiMiddleware {
     const {
         getIdentifier,
@@ -46,50 +51,64 @@ export function createRateLimitMiddleware(
 
     return (handler) => async (context) => {
         const { req } = context;
-
+        
         // Get identifier (IP address or custom)
-        const identifier = await (getIdentifier?.(req) ?? getDefaultIdentifier(req));
+        const identifier = await (getIdentifier ? 
+            getIdentifier(req) : 
+            getDefaultIdentifier(req));
+        
+        const path = req.nextUrl.pathname;
+        const method = req.method;
 
-        // Get API token if present
-        const token = await getToken(req) || undefined;
+        // Try to get API token
+        const token = await getToken(req);
 
-        // Check rate limit
-        const result = await client.check({
+        // Create context for rate limit check
+        const rateLimitContext: RateLimitContext = {
             identifier,
-            endpoint: includeEndpoint ? req.url : undefined,
-            method: includeMethod ? req.method : undefined,
-            token
-        });
+            token: token || undefined,
+            endpoint: includeEndpoint ? path : undefined,
+            method: includeMethod ? method : undefined,
+        };
 
-        // Add rate limit headers if enabled
-        const response = await handler(context);
+        // Check rate limit using the client
+        const result = await rateLimiter.check(rateLimitContext);
+
+        // Create response headers
+        const responseHeaders: Record<string, string> = {};
+        
         if (includeHeaders) {
-            const headers = new Headers(response.headers);
-            headers.set('X-RateLimit-Limit', result.info.limit.toString());
-            headers.set('X-RateLimit-Remaining', result.info.remaining.toString());
-            headers.set('X-RateLimit-Reset', result.info.reset.toString());
-
-            if (!result.success) {
-                headers.set('Retry-After', (result.info.retryAfter ?? 60).toString());
-                return new NextResponse(null, {
-                    status: 429,
-                    statusText: 'Too Many Requests',
-                    headers
-                });
+            responseHeaders['X-RateLimit-Limit'] = result.info.limit.toString();
+            responseHeaders['X-RateLimit-Remaining'] = result.info.remaining.toString();
+            responseHeaders['X-RateLimit-Reset'] = result.info.reset.toString();
+            
+            if (result.info.retryAfter) {
+                responseHeaders['Retry-After'] = result.info.retryAfter.toString();
             }
-
-            return new NextResponse(response.body, {
-                status: response.status,
-                statusText: response.statusText,
-                headers
-            });
         }
 
-        // If headers disabled, just block if rate limited
+        // If rate limit exceeded, return 429 Too Many Requests
         if (!result.success) {
-            return new NextResponse(null, {
-                status: 429,
-                statusText: 'Too Many Requests'
+            return NextResponse.json(
+                {
+                    error: 'Too Many Requests',
+                    message: 'Rate limit exceeded',
+                    retryAfter: result.info.retryAfter,
+                },
+                {
+                    status: 429,
+                    headers: responseHeaders,
+                }
+            );
+        }
+
+        // Continue with the request
+        const response = await handler(context);
+        
+        // Add rate limit headers to response if enabled
+        if (includeHeaders) {
+            Object.entries(responseHeaders).forEach(([key, value]) => {
+                response.headers.set(key, value);
             });
         }
 
@@ -110,7 +129,8 @@ function getDefaultIdentifier(req: NextRequest): string {
     const xff = req.headers.get('x-forwarded-for');
     const realIp = req.headers.get('x-real-ip');
 
-    // Use the first IP from x-forwarded-for, or x-real-ip, or default to localhost
-    const ip = xff?.split(',')[0] ?? realIp ?? '127.0.0.1';
+    // Use the first IP from x-forwarded-for, or x-real-ip, or default to unknown
+    const ip = xff ? xff.split(',')[0].trim() : (realIp || 'unknown');
+    
     return `ip:${ip}`;
 }
