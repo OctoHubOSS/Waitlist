@@ -87,12 +87,35 @@ export const authOptions: NextAuthOptions = {
       // Add user ID to the session
       if (session.user) {
         session.user.id = user?.id || token?.sub || "";
+        
+        // Add additional user properties if available
+        if (user) {
+          // Check if user has admin role
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { role: true }
+          });
+          
+          if (dbUser && dbUser.role === 'ADMIN') {
+            session.user.isAdmin = true;
+          }
+        }
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        
+        // Add additional properties if user has a role
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { role: true }
+        });
+        
+        if (dbUser && dbUser.role === 'ADMIN') {
+          token.isAdmin = true;
+        }
       }
       return token;
     },

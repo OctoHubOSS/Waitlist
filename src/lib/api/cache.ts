@@ -1,112 +1,87 @@
-/**
- * Simple cache utility for API responses
- * For production, consider using Redis or other distributed caching solutions
- */
+// A simple in-memory cache implementation
 
-interface CacheItem<T> {
-    value: T;
-    expiry: number;
-}
-
-// Using Node.js native caching for simplicity
-// In production, replace with Redis, Memcached, or other solution
-const cacheStore = new Map<string, CacheItem<any>>();
-
-export const cache = {
-    /**
-     * Get a value from cache
-     */
-    async get<T>(key: string): Promise<T | null> {
-        const item = cacheStore.get(key);
-
-        if (!item) return null;
-
-        // Check if the item has expired
-        if (item.expiry < Date.now()) {
-            cacheStore.delete(key);
-            return null;
-        }
-
-        return item.value as T;
-    },
-
-    /**
-     * Set a value in cache with optional TTL in seconds
-     */
-    async set<T>(key: string, value: T, ttl: number = 60): Promise<void> {
-        cacheStore.set(key, {
-            value,
-            expiry: Date.now() + (ttl * 1000)
-        });
-    },
-
-    /**
-     * Delete a value from cache
-     */
-    async delete(key: string): Promise<void> {
-        cacheStore.delete(key);
-    },
-
-    /**
-     * Clear all values from cache
-     */
-    async clear(): Promise<void> {
-        cacheStore.clear();
-    },
-
-    /**
-     * Check if a key exists in cache
-     */
-    async has(key: string): Promise<boolean> {
-        const item = cacheStore.get(key);
-        if (!item) return false;
-
-        // Check if the item has expired
-        if (item.expiry < Date.now()) {
-            cacheStore.delete(key);
-            return false;
-        }
-
-        return true;
-    },
-
-    /**
-     * Get all available cache keys
-     */
-    keys(): string[] {
-        const now = Date.now();
-        const keys: string[] = [];
-
-        // Use forEach which is compatible with all target versions
-        cacheStore.forEach((item, key) => {
-            if (item.expiry >= now) {
-                keys.push(key);
-            }
-        });
-
-        return keys;
-    },
-
-    /**
-     * Get cache size (non-expired items only)
-     */
-    get size(): number {
-        return this.keys().length;
-    },
-
-    /**
-     * Clean up expired items from cache
-     */
-    cleanup(): void {
-        const now = Date.now();
-        // Use forEach instead of entries() for broader compatibility
-        cacheStore.forEach((item, key) => {
-            if (item.expiry < now) {
-                cacheStore.delete(key);
-            }
-        });
-    }
+type CacheEntry<T> = {
+  value: T;
+  expiresAt: number;
 };
 
-// Optional: cleanup every hour
-setInterval(() => cache.cleanup(), 3600 * 1000);
+class MemoryCache {
+  private cache: Map<string, CacheEntry<any>> = new Map();
+  
+  /**
+   * Get a value from the cache
+   */
+  async get<T>(key: string): Promise<T | null> {
+    const entry = this.cache.get(key);
+    
+    if (!entry) {
+      return null;
+    }
+    
+    // Check if entry is expired
+    if (entry.expiresAt < Date.now()) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return entry.value as T;
+  }
+  
+  /**
+   * Set a value in the cache with optional TTL (in seconds)
+   */
+  async set<T>(key: string, value: T, ttl: number = 60): Promise<void> {
+    const expiresAt = Date.now() + (ttl * 1000);
+    this.cache.set(key, { value, expiresAt });
+  }
+  
+  /**
+   * Delete a value from the cache
+   */
+  async del(key: string): Promise<void> {
+    this.cache.delete(key);
+  }
+  
+  /**
+   * Clear the entire cache
+   */
+  async clear(): Promise<void> {
+    this.cache.clear();
+  }
+  
+  /**
+   * Get the number of entries in the cache
+   */
+  size(): number {
+    return this.cache.size;
+  }
+  
+  /**
+   * Perform cache maintenance by removing expired entries
+   */
+  async prune(): Promise<number> {
+    const now = Date.now();
+    let pruned = 0;
+    
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.expiresAt < now) {
+        this.cache.delete(key);
+        pruned++;
+      }
+    }
+    
+    return pruned;
+  }
+}
+
+// Create Redis cache class if Redis is available
+// This would use Redis instead of memory for distributed caching
+// If Redis is not available, fall back to memory cache
+
+// For now, export a singleton memory cache instance
+export const cache = new MemoryCache();
+
+// Schedule periodic pruning of expired cache entries
+setInterval(() => {
+  cache.prune().catch(console.error);
+}, 60 * 1000); // Run every minute

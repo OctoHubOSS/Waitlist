@@ -1,3 +1,4 @@
+import { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 /**
@@ -254,16 +255,40 @@ export const apiSchemas = {
  * @param schema Zod schema to validate against
  * @returns Validation result
  */
-export function validateQuery<T>(req: Request, schema: z.ZodType<T>): ValidationResult<T> {
-    const url = new URL(req.url);
-    const params: Record<string, any> = {};
-
-    // Convert URLSearchParams to a plain object
-    url.searchParams.forEach((value, key) => {
-        params[key] = value;
-    });
-
-    return validate(schema, params);
+export async function validateQuery<T>(req: NextRequest, schema: z.ZodType<T>): Promise<ValidationResult<T>> {
+    try {
+        // Get query params as object
+        const queryParams: Record<string, string> = {};
+        for (const [key, value] of req.nextUrl.searchParams.entries()) {
+            queryParams[key] = value;
+        }
+        
+        // Validate with zod schema
+        const result = schema.safeParse(queryParams);
+        
+        if (!result.success) {
+            return {
+                success: false,
+                error: {
+                    details: result.error.format(),
+                    message: 'Query validation failed'
+                }
+            };
+        }
+        
+        return {
+            success: true,
+            data: result.data
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: {
+                details: { _errors: ['Invalid query parameters'] },
+                message: error instanceof Error ? error.message : 'Failed to parse query parameters'
+            }
+        };
+    }
 }
 
 /**
@@ -273,17 +298,56 @@ export function validateQuery<T>(req: Request, schema: z.ZodType<T>): Validation
  * @param schema Zod schema to validate against
  * @returns Promise with validation result
  */
-export async function validateBody<T>(req: Request, schema: z.ZodType<T>): Promise<ValidationResult<T>> {
+export async function validateBody<T>(req: NextRequest, schema: z.ZodType<T>): Promise<ValidationResult<T>> {
     try {
         const body = await req.json();
-        return validate(schema, body);
+        
+        // Validate with zod schema
+        const result = schema.safeParse(body);
+        
+        if (!result.success) {
+            return {
+                success: false,
+                error: {
+                    details: result.error.format(),
+                    message: 'Validation failed'
+                }
+            };
+        }
+        
+        return {
+            success: true,
+            data: result.data
+        };
     } catch (error) {
         return {
             success: false,
             error: {
-                message: "Failed to parse request body",
-                details: error instanceof Error ? error.message : "Unknown error"
+                details: { _errors: ['Invalid JSON body'] },
+                message: error instanceof Error ? error.message : 'Failed to parse request body'
             }
-        } as ValidationError;
+        };
     }
+}
+
+/**
+ * Utility function to validate any data against a schema
+ */
+export function validate<T>(schema: z.ZodType<T>, data: unknown): ValidationResult<T> {
+    const result = schema.safeParse(data);
+    
+    if (!result.success) {
+        return {
+            success: false,
+            error: {
+                details: result.error.format(),
+                message: 'Validation failed'
+            }
+        };
+    }
+    
+    return {
+        success: true,
+        data: result.data
+    };
 }

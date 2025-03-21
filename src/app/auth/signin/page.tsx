@@ -4,7 +4,7 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaGithub } from "react-icons/fa";
+import { FaGithub, FaKey } from "react-icons/fa";
 import { TbLoader2 } from "react-icons/tb";
 import { HiExclamationCircle } from "react-icons/hi";
 import Link from "next/link";
@@ -173,6 +173,28 @@ export default function SignIn() {
               "Sign in with GitHub"
             )}
           </motion.button>
+        </motion.div>
+
+        {/* New section for API tokens */}
+        <motion.div 
+          className="mt-6 pt-6 border-t border-github-border"
+          variants={itemVariants}
+        >
+          <div className="flex items-center justify-center mb-4">
+            <FaKey className="text-github-text-secondary mr-2" />
+            <h3 className="text-github-text-secondary font-medium">API Access</h3>
+          </div>
+          <p className="text-xs text-github-text-secondary text-center mb-4">
+            Need programmatic access? Use API tokens instead of your account credentials.
+          </p>
+          <div className="flex justify-center">
+            <Link
+              href="/settings/tokens"
+              className="text-sm text-github-link hover:text-github-accent transition-colors"
+            >
+              Manage API Tokens
+            </Link>
+          </div>
         </motion.div>
 
         <motion.div className="mt-2 text-center" variants={itemVariants}>
