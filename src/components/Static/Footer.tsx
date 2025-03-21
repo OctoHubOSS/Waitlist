@@ -38,7 +38,7 @@ export default function Footer() {
             </li>
             <li>
               <a
-                href="https://github.com/git-logs/Octosearch"
+                href="https://github.com/OctoHubOSS/Website"
                 className="btn btn-primary flex items-center gap-2"
               >
                 Find Us On: <FaGithub />

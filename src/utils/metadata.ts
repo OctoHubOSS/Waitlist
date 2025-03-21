@@ -18,10 +18,10 @@ export function generateMetadata({
   imageUrl = "/logo.webp",
   keywords = [],
   canonicalUrl,
-  metadataBase = process.env.NEXT_PUBLIC_APP_URL || "https://octosearch.dev",
+  metadataBase = process.env.NEXT_PUBLIC_APP_URL || "https://octohub.dev",
 }: GenerateMetadataParams): Metadata {
   // Base app name
-  const siteName = "OctoSearch";
+  const siteName = "OctoHub";
 
   // Create the full title
   const fullTitle = title
@@ -88,8 +88,7 @@ export function generateRepoMetadata(
 ): Metadata {
   return generateMetadata({
     title: `${ownerName}/${repoName}`,
-    description:
-      description || `Explore ${ownerName}/${repoName} on OctoSearch`,
+    description: description || `Explore ${ownerName}/${repoName} on OctoHub`,
     keywords: [repoName, ownerName, "GitHub repository"],
     canonicalUrl: `/repo/${ownerName}/${repoName}`,
   });
