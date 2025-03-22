@@ -15,7 +15,6 @@ import {
 } from "react-icons/fa";
 import { useSession } from "next-auth/react";
 
-// Navigation link structures for easy maintenance
 const mainNavLinks = [
   { name: "Home", href: "/" },
   { name: "Explore", href: "/explore" },
@@ -55,7 +54,6 @@ const NavDropdown = ({
 }: DropdownProps) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -86,7 +84,7 @@ const NavDropdown = ({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full mt-2 z-20 w-48 origin-top-left rounded-md bg-github-dark shadow-lg ring-1 ring-github-border border border-github-border overflow-hidden">
+        <div className="absolute left-0 top-full mt-2 z-30 w-48 origin-top-left rounded-md bg-github-dark shadow-lg ring-1 ring-github-border border border-github-border overflow-hidden">
           <div className="py-1">
             {links.map((link) => (
               <Link
@@ -118,7 +116,6 @@ export default function Navigation() {
 
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Prevent scrolling when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = "hidden";
@@ -131,7 +128,6 @@ export default function Navigation() {
     };
   }, [mobileMenuOpen]);
 
-  // Close user dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -150,7 +146,6 @@ export default function Navigation() {
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
-    // Close all dropdowns when toggling mobile menu
     setUserDropdownOpen(false);
     setDocsDropdownOpen(false);
     setExtrasDropdownOpen(false);
@@ -162,14 +157,14 @@ export default function Navigation() {
   };
 
   return (
-    <header className="z-10 flex w-full min-w-screen items-center justify-between overflow-visible border-b border-github-border py-5 px-4 bg-github-dark">
+    <header className="fixed z-40 flex w-full min-w-screen items-center justify-between overflow-visible border-b border-github-border py-5 px-4 bg-github-dark">
       <Link
         className="z-10 flex shrink-0 items-center gap-2 text-xl font-bold"
         href="/"
       >
         <div className="relative h-8 w-8 sm:h-10 sm:w-10">
           <Image
-            alt="OctoSearch Logo"
+            alt="OctoHub Logo"
             className="object-contain"
             fill
             priority
@@ -179,7 +174,6 @@ export default function Navigation() {
         <span>OctoHub</span>
       </Link>
 
-      {/* Mobile menu button */}
       <button
         aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
         className="z-20 shrink-0 p-2 text-github-text transition-transform duration-300 md:hidden"
@@ -193,7 +187,6 @@ export default function Navigation() {
         )}
       </button>
 
-      {/* Desktop Navigation */}
       <nav className="hidden md:flex items-center">
         <ul className="flex flex-nowrap items-center gap-4 lg:gap-6 mr-4">
           {mainNavLinks.map((link) => (
@@ -254,7 +247,7 @@ export default function Navigation() {
               </button>
 
               {userDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 z-20 origin-top-right rounded-md bg-github-dark shadow-lg ring-1 ring-github-border border border-github-border overflow-hidden">
+                <div className="absolute right-0 mt-2 w-56 z-30 origin-top-right rounded-md bg-github-dark shadow-lg ring-1 ring-github-border border border-github-border overflow-hidden">
                   <div className="p-2 border-b border-github-border">
                     <p className="text-sm font-semibold">
                       {session?.user?.name}
@@ -303,10 +296,13 @@ export default function Navigation() {
         </div>
       </nav>
 
-      {/* Mobile Navigation */}
-      {mobileMenuOpen ? (
-        <div className="fixed inset-0 z-10 flex flex-col items-center justify-start overflow-y-auto bg-github-dark bg-opacity-95 pt-20 transition-transform duration-300 md:hidden">
-          <nav className="w-full px-6 pb-20">
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-20 flex flex-col items-center justify-start overflow-y-auto bg-github-dark bg-opacity-95 pt-20 transition-transform duration-300 md:hidden">
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50"
+            onClick={toggleMobileMenu}
+          ></div>
+          <nav className="w-full px-6 pb-20 relative z-30">
             <ul className="flex flex-col items-center gap-6 text-xl">
               {mainNavLinks.map((link) => (
                 <li key={link.href}>
@@ -441,7 +437,7 @@ export default function Navigation() {
             </ul>
           </nav>
         </div>
-      ) : null}
+      )}
     </header>
   );
 }

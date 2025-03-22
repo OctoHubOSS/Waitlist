@@ -14,21 +14,21 @@ const transporter = nodemailer.createTransport({
 // Email templates
 export const emailTemplates = {
     welcome: (name: string) => ({
-        subject: 'Welcome to OctoSearch!',
-        text: `Hi ${name},\n\nWelcome to OctoSearch! We're excited to have you on board.\n\nBest regards,\nThe OctoSearch Team`,
-        html: `<h1>Welcome to OctoSearch!</h1><p>Hi ${name},</p><p>Welcome to OctoSearch! We're excited to have you on board.</p><p>Best regards,<br>The OctoSearch Team</p>`,
+        subject: 'Welcome to OctoHub!',
+        text: `Hi ${name},\n\nWelcome to OctoHub! We're excited to have you on board.\n\nBest regards,\nThe OctoHub Team`,
+        html: `<h1>Welcome to OctoHub!</h1><p>Hi ${name},</p><p>Welcome to OctoHub! We're excited to have you on board.</p><p>Best regards,<br>The OctoHub Team</p>`,
     }),
 
     passwordReset: (resetLink: string) => ({
-        subject: 'Reset Your OctoSearch Password',
-        text: `Hello,\n\nYou requested to reset your password. Please click the following link to reset it: ${resetLink}\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe OctoSearch Team`,
-        html: `<h1>Reset Your Password</h1><p>Hello,</p><p>You requested to reset your password. Please click the button below to reset it:</p><p><a href="${resetLink}" style="padding: 10px 15px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a></p><p>If you didn't request this, please ignore this email.</p><p>Best regards,<br>The OctoSearch Team</p>`,
+        subject: 'Reset Your OctoHub Password',
+        text: `Hello,\n\nYou requested to reset your password. Please click the following link to reset it: ${resetLink}\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe OctoHub Team`,
+        html: `<h1>Reset Your Password</h1><p>Hello,</p><p>You requested to reset your password. Please click the button below to reset it:</p><p><a href="${resetLink}" style="padding: 10px 15px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a></p><p>If you didn't request this, please ignore this email.</p><p>Best regards,<br>The OctoHub Team</p>`,
     }),
 
     githubLinked: (username: string) => ({
         subject: 'GitHub Account Linked Successfully',
-        text: `Hello,\n\nYour GitHub account (${username}) has been successfully linked to your OctoSearch account.\n\nBest regards,\nThe OctoSearch Team`,
-        html: `<h1>GitHub Account Linked</h1><p>Hello,</p><p>Your GitHub account (<strong>${username}</strong>) has been successfully linked to your OctoSearch account.</p><p>Best regards,<br>The OctoSearch Team</p>`,
+        text: `Hello,\n\nYour GitHub account (${username}) has been successfully linked to your OctoHub account.\n\nBest regards,\nThe OctoHub Team`,
+        html: `<h1>GitHub Account Linked</h1><p>Hello,</p><p>Your GitHub account (<strong>${username}</strong>) has been successfully linked to your OctoHub account.</p><p>Best regards,<br>The OctoHub Team</p>`,
     })
 };
 

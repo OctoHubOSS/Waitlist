@@ -18,6 +18,7 @@
     "search-users",
     "trending",
     "user-repositories",
-    "user-starred"
+    "user-starred",
+    "token-usage"
   ]
 }
