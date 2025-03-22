@@ -1,0 +1,29 @@
+<mjml>
+  <mj-head>
+    <mj-title>OctoHub Test Email</mj-title>
+    <mj-attributes>
+      <mj-all font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" />
+      <mj-text color="#1a1a1a" font-size="16px" line-height="24px" />
+      <mj-heading color="#1a1a1a" font-size="24px" font-weight="bold" />
+      <mj-button background-color="#2563eb" color="white" border-radius="6px" font-weight="bold" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f4f4f5">
+    <mj-section background-color="#ffffff" padding="20px 0">
+      <mj-column>
+        <mj-image width="150px" src="https://octohub.dev/logo.png" alt="OctoHub Logo" />
+        <mj-heading>Test Email from OctoHub</mj-heading>
+        <mj-text>
+          This is a test email sent from the OctoHub API. If you're receiving this, the email configuration is working correctly!
+        </mj-text>
+        <mj-text color="#666666" font-size="14px">
+          Sent at: {{timestamp}}
+        </mj-text>
+        <mj-divider border-color="#e5e7eb" />
+        <mj-text color="#666666" font-size="14px">
+          This is an automated message, please do not reply to this email.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml> 

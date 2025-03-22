@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
-import { sendEmail } from "@/lib/email";
+import { sendEmail } from "@/lib/email/client";
 import { z } from "zod";
 import { successResponse, errors } from "@/lib/api/responses";
 import { validate } from "@/lib/api/validation";

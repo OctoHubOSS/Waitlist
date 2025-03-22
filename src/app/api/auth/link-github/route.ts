@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { linkGithubAccount } from "@/lib/account";
 import { getOctokitClient } from "@/utils/github";
-import { sendEmail, emailTemplates } from "@/lib/email";
+import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { successResponse, errors, handleApiError } from "@/lib/api/responses";
 import { schemas, validateBody } from "@/lib/api/validation";
 import { z } from "zod";
