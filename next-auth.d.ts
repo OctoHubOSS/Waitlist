@@ -1,35 +1,35 @@
-import NextAuth from "next-auth";
+import { UserRole, UserStatus } from "@prisma/client";
+import "next-auth";
 
 declare module "next-auth" {
   interface User {
     id: string;
-    ip?: string;
-    userAgent?: string;
-    device?: string;
-    location?: string;
+    email?: string | null;
+    name?: string | null;
+    image?: string | null;
+    role: UserRole;
+    status: UserStatus;
+    lastActiveAt: Date | null;
     isAdmin?: boolean;
   }
 
   interface Session {
-    user: {
+    user: User & {
       id: string;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-      ip?: string;
-      userAgent?: string;
-      device?: string;
-      location?: string;
+      role: UserRole;
+      status: UserStatus;
+      lastActiveAt: Date | null;
       isAdmin?: boolean;
     };
   }
+}
 
+declare module "next-auth/jwt" {
   interface JWT {
     id: string;
-    ip?: string;
-    userAgent?: string;
-    device?: string;
-    location?: string;
+    role: UserRole;
+    status: UserStatus;
+    lastActiveAt: Date | null;
     isAdmin?: boolean;
   }
 }

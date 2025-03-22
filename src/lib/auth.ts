@@ -1,9 +1,10 @@
 import { getServerSession } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions } from "next-auth";
-import { Adapter } from "next-auth/adapters";
 import GithubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { UserRole, UserStatus } from "@prisma/client";
+import type { GithubProfile } from "next-auth/providers/github";
 import prisma from "@root/prisma/database";
 import bcrypt from "bcrypt";
 
@@ -26,157 +27,185 @@ export async function verifyPassword(
  * NextAuth configuration options
  */
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
-
+  adapter: PrismaAdapter(prisma) as any,
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+    error: "/auth/error",
+  },
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        });
-
-        if (!user || !user.password) {
-          return null;
-        }
-
-        const isValid = await verifyPassword(credentials.password, user.password);
-
-        if (!isValid) {
-          return null;
-        }
-
-        // Update last login timestamp
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            lastLoginAt: new Date(),
-            status: "ONLINE"
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            throw new Error("Missing credentials");
           }
+
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          });
+
+          if (!user || !user.password) {
+            throw new Error("Invalid credentials");
+          }
+
+          const isValid = await bcrypt.compare(credentials.password, user.password);
+
+          if (!isValid) {
+            throw new Error("Invalid credentials");
+          }
+
+          if (user.role === UserRole.BANNED) {
+            throw new Error("Account is banned");
+          }
+
+          // Update user status
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              lastLoginAt: new Date(),
+              lastActiveAt: new Date(),
+              status: UserStatus.ONLINE,
+            },
+          });
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            role: user.role,
+            status: user.status,
+            lastActiveAt: user.lastActiveAt,
+            isAdmin: user.role === UserRole.ADMIN,
+          };
+        } catch (error) {
+          console.error("Auth error:", error);
+          return null;
+        }
+      },
+    }),
+    GithubProvider({
+      clientId: process.env.GITHUB_ID!,
+      clientSecret: process.env.GITHUB_SECRET!,
+      async profile(profile: GithubProfile) {
+        // Find or create user
+        const user = await prisma.user.upsert({
+          where: { email: profile.email || "" },
+          update: {},
+          create: {
+            email: profile.email || "",
+            name: profile.name || profile.login,
+            image: profile.avatar_url,
+            role: UserRole.USER,
+            status: UserStatus.ONLINE,
+            lastActiveAt: new Date(),
+            githubId: profile.id.toString(),
+            githubUsername: profile.login,
+            githubDisplayName: profile.name || profile.login,
+          },
         });
 
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          image: user.image
+          image: user.image,
+          role: user.role,
+          status: user.status,
+          lastActiveAt: user.lastActiveAt,
+          isAdmin: user.role === UserRole.ADMIN,
         };
-      }
-    }),
-    GithubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID || "",
-      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-      authorization: {
-        params: {
-          scope: "read:user user:email repo",
-        },
       },
     }),
   ],
-
   callbacks: {
-    async session({ session, user, token }) {
-      // Add user ID to the session
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = user?.id || token?.sub || "";
-
-        // Add additional user properties if available
-        if (user) {
-          // Check if user has admin role
-          const dbUser = await prisma.user.findUnique({
-            where: { id: user.id },
-            select: { role: true }
-          });
-
-          if (dbUser && dbUser.role === 'ADMIN') {
-            session.user.isAdmin = true;
-          }
-        }
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.status = token.status;
+        session.user.lastActiveAt = token.lastActiveAt;
+        session.user.isAdmin = token.role === UserRole.ADMIN;
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-
-        // Add additional properties if user has a role
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { role: true }
-        });
-
-        if (dbUser && dbUser.role === 'ADMIN') {
-          token.isAdmin = true;
-        }
+        token.role = user.role;
+        token.status = user.status;
+        token.lastActiveAt = user.lastActiveAt;
       }
       return token;
     },
-    async signIn({ user, account, profile }) {
-      // For GitHub sign-ins, check for account linking
-      if (account?.provider === "github" && user?.email && profile) {
-        const githubProfile = profile as any;
-        const githubId = githubProfile.id?.toString();
-        const githubUsername = githubProfile.login;
-
-        // Check if there's an existing account with this email
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email },
+  },
+  events: {
+    async signIn({ user, account, profile, isNewUser }) {
+      try {
+        // Log successful login
+        await prisma.userActivity.create({
+          data: {
+            userId: user.id,
+            action: "LOGIN_SUCCESS",
+            metadata: {
+              provider: account?.provider || "unknown",
+              isNewUser: isNewUser || false,
+              profile: profile ? JSON.parse(JSON.stringify(profile)) : null,
+            },
+          },
         });
 
-        if (existingUser) {
-          // Link the GitHub account to the existing user
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: {
-              githubId,
-              githubUsername,
-              githubDisplayName: githubProfile.name || null,
-              lastLoginAt: new Date(),
-              status: "ONLINE"
-            }
-          });
-
-          // Return the existing user ID to sign in as that user
-          user.id = existingUser.id;
-          return true;
-        } else {
-          // New GitHub user - update with GitHub-specific fields
+        // If using GitHub, update GitHub-related fields
+        if (account?.provider === "github" && profile) {
+          const githubProfile = profile as GithubProfile;
           await prisma.user.update({
             where: { id: user.id },
             data: {
-              githubId,
-              githubUsername,
-              githubDisplayName: githubProfile.name || null,
-              lastLoginAt: new Date(),
-              status: "ONLINE"
-            }
+              githubId: githubProfile.id.toString(),
+              githubUsername: githubProfile.login,
+              githubDisplayName: githubProfile.name || githubProfile.login,
+            },
           });
         }
+      } catch (error) {
+        console.error("SignIn event error:", error);
       }
+    },
+    async signOut({ session, token }) {
+      try {
+        if (session?.user?.id) {
+          // Log sign out
+          await prisma.userActivity.create({
+            data: {
+              userId: session.user.id,
+              action: "LOGOUT",
+              metadata: {
+                provider: token.provider || "unknown",
+              },
+            },
+          });
 
-      return true;
-    }
-  },
-
-  // Configure debug mode based on environment
-  debug: process.env.NODE_ENV === "development",
-  session: {
-    strategy: "database",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-
-  pages: {
-    signIn: "/auth/signin",
-    signOut: "/auth/signout",
-    error: "/auth/error",
+          // Update user status
+          await prisma.user.update({
+            where: { id: session.user.id },
+            data: {
+              status: UserStatus.OFFLINE,
+              lastActiveAt: new Date(),
+            },
+          });
+        }
+      } catch (error) {
+        console.error("SignOut event error:", error);
+      }
+    },
   },
 };
 
@@ -184,15 +213,13 @@ export const authOptions: NextAuthOptions = {
  * Helper to get the server session
  * Use this in server components and API routes
  */
-export const getSession = async () => {
-  return await getServerSession(authOptions);
-};
+export const getAuthSession = () => getServerSession(authOptions);
 
 /**
  * Helper to check if a user is authenticated on the server
  */
 export const isAuthenticated = async () => {
-  const session = await getSession();
+  const session = await getAuthSession();
   return !!session?.user;
 };
 
