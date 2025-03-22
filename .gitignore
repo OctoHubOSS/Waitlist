@@ -9,6 +9,11 @@
 !.yarn/sdks
 !.yarn/versions
 
+# Packages
+package-lock.json
+bun.lock
+bun.lockb
+
 # Next.js build output
 /.next
 /.next/

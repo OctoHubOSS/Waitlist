@@ -11,6 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:force_push": "prisma db push --force-reset",
     "prisma:push": "prisma db push",
+    "prisma:pull": "prisma db pull",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
