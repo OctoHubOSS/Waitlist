@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { NextRequest } from 'next/server';
-import { ApiContext, ApiMiddleware, NextApiHandler, withMiddlewares } from './middleware';
+import { NextRequest, NextResponse } from 'next/server';
+import { ApiContext, ApiHandler, ApiMiddleware, composeMiddlewares } from './middleware';
 import { createRateLimitMiddleware } from './middlewares/ratelimit';
 import { RateLimitClient } from '../ratelimit/client';
 import { CachedRateLimitClient } from '../ratelimit/cache';
@@ -15,7 +15,7 @@ export class ApiClient {
         this.middlewares = [];
 
         // Initialize rate limit client
-        const baseRateLimitClient = new RateLimitClient(prisma, {
+        const baseRateLimitClient = new RateLimitClient({
             defaultRule: {
                 limit: 100,
                 window: 60, // 1 minute
@@ -45,11 +45,9 @@ export class ApiClient {
 
         // Add default rate limit middleware
         this.use(createRateLimitMiddleware(this.rateLimitClient, {
-            defaultRule: {
-                limit: 100,
-                window: 60
-            },
-            includeHeaders: true
+            includeHeaders: true,
+            includeEndpoint: true,
+            includeMethod: true
         }));
     }
 
@@ -64,18 +62,26 @@ export class ApiClient {
     /**
      * Create a route handler with all middlewares applied
      */
-    handler(handler: NextApiHandler): NextApiHandler {
-        return withMiddlewares(handler, ...this.middlewares);
+    handler(handler: ApiHandler): (req: NextRequest, params: Record<string, string>) => Promise<NextResponse> {
+        const composedMiddleware = composeMiddlewares(...this.middlewares);
+        const wrappedHandler = composedMiddleware(handler);
+
+        return async (req: NextRequest, params: Record<string, string>) => {
+            return wrappedHandler({ req, params, data: {} });
+        };
     }
 
     /**
      * Create context for an API request
      */
-    createContext(req: NextRequest, params?: Record<string, string>): ApiContext {
+    createContext(req: NextRequest, params: Record<string, string>): ApiContext {
         return {
             req,
             params,
-            searchParams: new URL(req.url).searchParams
+            data: {
+                prisma: this.prisma,
+                rateLimit: this.rateLimitClient
+            }
         };
     }
 
