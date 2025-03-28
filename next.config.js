@@ -18,7 +18,7 @@ const nextConfig = {
   },
   async redirects() {
     // Only apply redirects in production
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'production') {
       return [
         {
           source: '/:path((?!coming-soon|api|_next|static|waitlist/unsubscribe|waitlist/subscribe).*)*',
