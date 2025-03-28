@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import prisma from "@/lib/database";
 import { hashPassword, verifyPassword } from "@/lib/auth";
 import { User } from "@prisma/client";
 
@@ -21,6 +21,7 @@ export async function createUser(
             name: name ?? null,
             image: image ?? null,
             status: "ONLINE" as const,
+            statusMessage: null,
             lastLoginAt: new Date(),
         }
     });

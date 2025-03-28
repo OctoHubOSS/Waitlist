@@ -47,6 +47,22 @@ export class TokenApiClient {
   }
 
   /**
+   * Refresh the API token using the token service
+   */
+  async refreshToken(): Promise<void> {
+    if (!this.token) {
+        throw new Error("No token available to refresh");
+    }
+
+    const refreshedToken = await tokenService.refreshToken(this.token);
+    if (!refreshedToken) {
+        throw new Error("Failed to refresh token");
+    }
+
+    this.token = refreshedToken;
+  }
+
+  /**
    * Make an authenticated API request
    */
   async request<T = any>(
@@ -123,6 +139,25 @@ export class TokenApiClient {
     }
 
     return data as T;
+  }
+
+  /**
+   * Make an authenticated API request with automatic token refresh
+   */
+  async requestWithRefresh<T = any>(
+    endpoint: string,
+    options: RequestOptions = {}
+  ): Promise<T> {
+    try {
+        return await this.request<T>(endpoint, options);
+    } catch (error: any) {
+        if (error.status === 401 && this.token) {
+            // Attempt to refresh the token and retry the request
+            await this.refreshToken();
+            return this.request<T>(endpoint, options);
+        }
+        throw error;
+    }
   }
 
   // Convenience methods for common HTTP methods

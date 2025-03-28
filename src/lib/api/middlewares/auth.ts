@@ -5,7 +5,7 @@ import { ApiMiddleware } from '../middleware';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { tokenService } from '@/lib/auth/token-service';
-import prisma from '@root/prisma/database';
+import prisma from '@/lib/database';
 
 export type AuthConfig = {
     required?: boolean;  // Whether authentication is required (default: false)

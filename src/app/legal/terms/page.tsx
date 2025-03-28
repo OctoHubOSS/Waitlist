@@ -2,8 +2,8 @@ import { Metadata } from "next";
 import LegalLayout from "@/components/Layout/Legal";
 
 export const metadata: Metadata = {
-    title: "Terms of Service - OctoSearch",
-    description: "OctoSearch Terms of Service and User Agreement"
+    title: "Terms of Service - OctoHub",
+    description: "OctoHub Terms of Service and User Agreement"
 };
 
 export default function TermsPage() {
@@ -16,11 +16,11 @@ export default function TermsPage() {
                 </h2>
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed mb-4">
-                        By accessing or using the OctoSearch service, you agree to be bound by these Terms of Service.
+                        By accessing or using the OctoHub service, you agree to be bound by these Terms of Service.
                         If you do not agree to these terms, please do not use the service.
                     </p>
                     <p className="text-github-text leading-relaxed">
-                        These Terms of Service constitute a legally binding agreement between you and OctoSearch regarding your use of our service.
+                        These Terms of Service constitute a legally binding agreement between you and OctoHub regarding your use of our service.
                     </p>
                 </div>
             </section>
@@ -32,14 +32,13 @@ export default function TermsPage() {
                 </h2>
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed mb-4">
-                        OctoSearch provides a code search interface that uses the GitHub API to enable users to search through repositories.
-                        The service includes features for saving preferences, tracking search history, and managing favorite repositories.
+                        OctoHub provides a code hosting and collaboration platform that enables users to manage repositories.
+                        The service includes features for saving preferences, tracking history, and managing repositories.
                         The service is provided "as is" and may change without notice.
                     </p>
                     <p className="text-github-text leading-relaxed">
-                        OctoSearch stores certain data on its servers to provide personalized features, including user profiles, search queries,
-                        and repository information retrieved from GitHub's API. This data is subject to GitHub's rate limiting, availability,
-                        and terms of service as well as our own Privacy Policy.
+                        OctoHub stores certain data on its servers to provide personalized features, including user profiles, repositories,
+                        and activity information. This data is subject to our Privacy Policy.
                     </p>
                 </div>
             </section>
@@ -51,7 +50,7 @@ export default function TermsPage() {
                 </h2>
                 <div className="bg-github-dark-secondary/30 p-5 rounded-md">
                     <p className="text-github-text leading-relaxed mb-4">
-                        OctoSearch uses the GitHub API to provide its functionality. By using our service, you acknowledge that:
+                        OctoHub may use the GitHub API to provide some functionality. By using our service, you acknowledge that:
                     </p>
                     <ul className="list-none space-y-2 mb-4">
                         <li className="flex items-start">
@@ -273,10 +272,10 @@ export default function TermsPage() {
                     <p className="text-github-text leading-relaxed">
                         If you have any questions about these Terms of Service, please contact us at{" "}
                         <a
-                            href="mailto:legal@octosearch.dev"
+                            href="mailto:legal@octohub.dev"
                             className="text-github-link hover:text-github-link-hover font-medium underline underline-offset-2 transition-colors"
                         >
-                            legal@octosearch.dev
+                            legal@octohub.dev
                         </a>.
                     </p>
                 </div>

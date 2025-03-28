@@ -23,24 +23,82 @@ export type ValidationError = {
 
 export type ValidationResult<T> = ValidationSuccess<T> | ValidationError;
 
+// Add Zod enums for Prisma enums
+export const enums = {
+    userStatus: z.enum(["ONLINE", "IDLE", "DO_NOT_DISTURB", "BUSY", "AWAY", "OFFLINE", "INVISIBLE"]),
+    userRole: z.enum(["ADMIN", "MODERATOR", "USER", "READONLY", "BANNED"]),
+    repoSource: z.enum(["OCTOFLOW", "GITHUB", "GITLAB", "BITBUCKET"]),
+    orgRole: z.enum(["OWNER", "ADMIN", "MEMBER"]),
+    repoPermission: z.enum(["READ", "WRITE", "ADMIN"]),
+    issueState: z.enum(["OPEN", "CLOSED"]),
+    pullRequestState: z.enum(["OPEN", "CLOSED", "MERGED"]),
+    milestoneState: z.enum(["OPEN", "CLOSED"]),
+    reactionType: z.enum(["THUMBS_UP", "THUMBS_DOWN", "LAUGH", "CONFUSED", "HEART", "HOORAY", "ROCKET", "EYES"]),
+    packageVisibility: z.enum(["PUBLIC", "PRIVATE", "INTERNAL"]),
+    packageType: z.enum(["NPM", "MAVEN", "RUBYGEMS", "DOCKER", "NUGET", "PYPI", "CARGO", "COMPOSER"]),
+    branchProtectionLevel: z.enum(["NONE", "LOW", "MEDIUM", "HIGH"]),
+    statsPeriod: z.enum(["HOURLY", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"]),
+    trendingPeriod: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
+    trendingType: z.enum(["USER", "ORGANIZATION", "REPOSITORY"]),
+};
+
 // Common validation schemas
 export const schemas = {
     // User schemas
-    user: {
+    user: z.object({
         id: z.string().cuid(),
-        email: z.string().email("Invalid email address"),
-        password: z.string().min(8, "Password must be at least 8 characters"),
         name: z.string().optional(),
-        login: z.string().optional(),
-    },
+        displayName: z.string().optional(),
+        email: z.string().email().optional(),
+        emailVerified: z.date().optional(),
+        password: z.string().optional(),
+        image: z.string().url().optional(),
+        bio: z.string().optional(),
+        website: z.string().url().optional(),
+        location: z.string().optional(),
+        createdAt: z.date(),
+        updatedAt: z.date(),
+        deletedAt: z.date().optional(),
+        lastLoginAt: z.date().optional(),
+        lastActiveAt: z.date().optional(),
+        status: enums.userStatus,
+        role: enums.userRole,
+    }),
 
     // Repository schemas
-    repo: {
-        owner: z.string().min(1, "Repository owner is required"),
+    repository: z.object({
+        id: z.string().cuid(),
         name: z.string().min(1, "Repository name is required"),
-        fullPath: z.string().regex(/^[^\/]+\/[^\/]+$/, "Invalid repository path (should be owner/repo)"),
-        branch: z.string().optional(),
-    },
+        description: z.string().optional(),
+        isPrivate: z.boolean().default(false),
+        defaultBranch: z.string().default("main"),
+        language: z.string().optional(),
+        forkCount: z.number().int().default(0),
+        starCount: z.number().int().default(0),
+        size: z.number().int().default(0),
+        watcherCount: z.number().int().default(0),
+        createdAt: z.date(),
+        updatedAt: z.date(),
+        lastPushedAt: z.date().optional(),
+        deletedAt: z.date().optional(),
+        source: enums.repoSource,
+        ownerId: z.string().optional(), // Added ownerId field
+    }),
+
+    // Organization schemas
+    organization: z.object({
+        id: z.string().cuid(),
+        name: z.string().min(1, "Organization name is required"),
+        displayName: z.string().optional(),
+        description: z.string().optional(),
+        avatarUrl: z.string().url().optional(),
+        website: z.string().url().optional(),
+        location: z.string().optional(),
+        email: z.string().email().optional(),
+        isPublic: z.boolean().default(true),
+        createdAt: z.date(),
+        updatedAt: z.date(),
+    }),
 
     // Pagination schemas
     pagination: {
@@ -128,8 +186,8 @@ export const apiSchemas = {
      */
     repository: (additionalFields?: z.ZodRawShape) => {
         const baseSchema = {
-            owner: schemas.repo.owner,
-            repo: schemas.repo.name,
+            ownerId: schemas.repository.shape.ownerId, // Fixed reference to ownerId
+            repo: schemas.repository.shape.name,
         };
 
         if (additionalFields) {
@@ -241,9 +299,9 @@ export const apiSchemas = {
      * Registration schema for user accounts
      */
     registration: z.object({
-        email: schemas.user.email,
-        password: schemas.user.password,
-        name: schemas.user.name,
+        email: schemas.user.shape.email,
+        password: schemas.user.shape.password,
+        name: schemas.user.shape.name,
         image: z.string().url("Invalid image URL").optional(),
     }),
 };
@@ -328,26 +386,4 @@ export async function validateBody<T>(req: NextRequest, schema: z.ZodType<T>): P
             }
         };
     }
-}
-
-/**
- * Utility function to validate any data against a schema
- */
-export function validate<T>(schema: z.ZodType<T>, data: unknown): ValidationResult<T> {
-    const result = schema.safeParse(data);
-    
-    if (!result.success) {
-        return {
-            success: false,
-            error: {
-                details: result.error.format(),
-                message: 'Validation failed'
-            }
-        };
-    }
-    
-    return {
-        success: true,
-        data: result.data
-    };
 }

@@ -3,18 +3,18 @@ import { ClientSecretCredential } from "@azure/identity";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { EmailTemplateProps, TemplateName } from './template';
 
-import { 
-    TokenCredentialAuthenticationProvider 
+import {
+    TokenCredentialAuthenticationProvider
 } from "@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials";
 
 
-import { 
-    EmailClient, 
-    EmailSender, 
-    EmailRecipient, 
-    EmailTemplate, 
-    SendEmailOptions, 
-    SendEmailResult 
+import {
+    EmailClient,
+    EmailSender,
+    EmailRecipient,
+    EmailTemplate,
+    SendEmailOptions,
+    SendEmailResult
 } from '@/types/email';
 
 /**
@@ -46,14 +46,14 @@ class EmailClientImpl implements EmailClient {
      * @type {EmailClientImpl}
      */
     private static instance: EmailClientImpl;
-    
+
     /**
      * Microsoft Graph client for API calls
      * @private
      * @type {Client}
      */
     private graphClient: Client;
-    
+
     /**
      * Default sender configuration
      * @private
@@ -89,8 +89,8 @@ class EmailClientImpl implements EmailClient {
 
         // Set default sender
         this.defaultFrom = {
-            address: process.env.FROM_EMAIL || 'noreply@octohub.dev',
-            name: process.env.FROM_NAME || 'OctoHub'
+            address: process.env.DEFAULT_FROM_EMAIL || 'noreply@octohub.dev',
+            name: process.env.DEFAULT_FROM_NAME || 'OctoHub'
         };
     }
 
@@ -121,7 +121,7 @@ class EmailClientImpl implements EmailClient {
         welcome: (name: string): EmailTemplate => {
             const props: EmailTemplateProps['welcome'] = { name };
             const text = `Hi ${name},\n\nWelcome to OctoHub! We're excited to have you on board.\n\nBest regards,\nThe OctoHub Team`;
-            
+
             return {
                 subject: 'Welcome to OctoHub!',
                 text,
@@ -137,7 +137,7 @@ class EmailClientImpl implements EmailClient {
         passwordReset: (resetLink: string): EmailTemplate => {
             const props: EmailTemplateProps['passwordReset'] = { resetLink };
             const text = `Hello,\n\nYou requested to reset your password. Please click the following link to reset it: ${resetLink}\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe OctoHub Team`;
-            
+
             return {
                 subject: 'Reset Your OctoHub Password',
                 text,
@@ -153,7 +153,7 @@ class EmailClientImpl implements EmailClient {
         githubLinked: (username: string): EmailTemplate => {
             const props: EmailTemplateProps['githubLinked'] = { username };
             const text = `Hello,\n\nYour GitHub account (${username}) has been successfully linked to your OctoHub account.\n\nBest regards,\nThe OctoHub Team`;
-            
+
             return {
                 subject: 'GitHub Account Linked Successfully',
                 text,
@@ -169,7 +169,7 @@ class EmailClientImpl implements EmailClient {
             const timestamp = new Date().toISOString();
             const props: EmailTemplateProps['test'] = { timestamp };
             const text = `Beep boop boop beep, our email configuration is setup and working as expected. GG!`;
-            
+
             return {
                 subject: 'OctoHub Test Email',
                 text,
@@ -189,11 +189,43 @@ class EmailClientImpl implements EmailClient {
         loginFailed: (params: EmailTemplateProps['loginFailed']): EmailTemplate => {
             const { name, ipAddress, userAgent, timestamp } = params;
             const text = `Hello ${name},\n\nWe detected a failed login attempt for your account.\n\nIP Address: ${ipAddress}\nDevice: ${userAgent}\nTime: ${new Date(timestamp).toLocaleString()}\n\nIf this wasn't you, please change your password immediately.\n\nBest regards,\nThe OctoHub Team`;
-            
+
             return {
                 subject: 'Security Alert: Failed Login Attempt',
                 text,
                 html: renderEmailToHtml('loginFailed', params)
+            };
+        },
+
+        /**
+         * Generates a waitlist confirmation email template
+         * @param {string} email - The subscriber's email address
+         * @returns {EmailTemplate} The generated email template
+         */
+        waitlistConfirmation: (email: string): EmailTemplate => {
+            const props: EmailTemplateProps['waitlistConfirmation'] = { email };
+            const text = `Thank you for joining the OctoHub waitlist!\n\nYou've been added to our waitlist with the email: ${email}\n\nWe're working hard to build the next generation of code collaboration and version control. As a waitlist member, you'll be among the first to know when we launch and get exclusive early access.\n\nStay tuned for updates and exciting news about our progress!\n\nBest regards,\nThe OctoHub Team\n\nIf you didn't sign up for the OctoHub waitlist, you can safely ignore this email.`;
+
+            return {
+                subject: 'Welcome to the OctoHub Waitlist!',
+                text,
+                html: renderEmailToHtml('waitlistConfirmation', props)
+            };
+        },
+
+        /**
+         * Generates a waitlist unsubscribe confirmation email template
+         * @param {string} email - The subscriber's email address
+         * @returns {EmailTemplate} The generated email template
+         */
+        waitlistUnsubscribe: (email: string): EmailTemplate => {
+            const props: EmailTemplateProps['waitlistUnsubscribe'] = { email };
+            const text = `Hello,\n\nThis email confirms that you have been successfully unsubscribed from the OctoHub waitlist (${email}).\n\nIf you change your mind, you can always rejoin the waitlist by visiting our website.\n\nBest regards,\nThe OctoHub Team`;
+
+            return {
+                subject: 'Unsubscribed from OctoHub Waitlist',
+                text,
+                html: renderEmailToHtml('waitlistUnsubscribe', props)
             };
         }
     };

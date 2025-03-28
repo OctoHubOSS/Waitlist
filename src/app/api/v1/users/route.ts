@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import prisma from '@root/prisma/database';
+import prisma from '@/lib/database';
 import { validateQuery } from '@/lib/api/validation';
 import { errors, handleApiError, paginatedResponse } from '@/lib/api/responses';
 import { z } from 'zod';

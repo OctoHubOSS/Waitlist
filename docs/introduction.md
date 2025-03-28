@@ -1,52 +1,52 @@
 ---
 title: Introduction
-description: Learn about OctoSearch and how it can help you discover GitHub resources.
+description: Learn about OctoHub and how it can help you manage repositories and collaborate effectively.
 category: Getting Started
 order: 1
 ---
 
-# Introduction to OctoSearch
+# Introduction to OctoHub
 
-OctoSearch provides an intuitive interface for exploring GitHub's vast ecosystem of users, repositories, organizations, and programming languages. 
+OctoHub provides an intuitive platform for hosting, managing, and collaborating on Git repositories with advanced tools for developers, teams, and organizations.
 
-## Why OctoSearch?
+## Why OctoHub?
 
-GitHub hosts millions of repositories and developers, making it challenging to find exactly what you're looking for. OctoSearch solves this problem by providing:
+The software development landscape requires robust tools for collaboration and code management. OctoHub solves these needs by providing:
 
-- **Advanced search filters** for precise results
-- **User-friendly interface** that simplifies complex queries
-- **Curated collections** of repositories and developers
-- **Real-time trending data** to keep you updated on hot projects
+- **Advanced repository management** for precise control
+- **User-friendly interface** that simplifies complex workflows
+- **Curated collaboration tools** for teams and organizations
+- **Real-time analytics** to track project progress
 
 ## Key Features
 
-### Developer Search
+### Developer Collaboration
 
-Find talented developers based on:
+Work effectively with other developers using:
 
-- Programming language expertise
-- Geographic location
-- Contribution activity
-- Repository ownership
+- Pull request workflows
+- Code review tools
+- Issue tracking
+- Contribution metrics
 
-### Repository Discovery
+### Repository Management
 
-Locate repositories that match your needs with filters for:
+Manage repositories with powerful tools for:
 
-- Languages
-- Stars and popularity
-- Update recency
-- Documentation quality
+- Branch protection rules
+- Fine-grained permissions
+- CI/CD integration
+- Comprehensive API access
 
-### Organization Insights
+### Organization Controls
 
-Explore organizations on GitHub with details about:
+Manage your development teams with:
 
-- Open source contributions
-- Member counts and activity
-- Popular repositories
-- Technology focus areas
+- Role-based access control
+- Team management
+- Audit logging
+- Policy enforcement
 
 ## Getting Started
 
-Continue to the [Quick Start](/docs/quick-start) guide to begin using OctoSearch for your GitHub exploration needs.
+Continue to the [Quick Start](/docs/quick-start) guide to begin using OctoHub for your development needs.

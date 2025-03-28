@@ -16,12 +16,16 @@ export interface EmailTemplateVars {
     passwordReset: { resetLink: string; text: string };
     githubLinked: { username: string; text: string };
     test: { timestamp: string; text: string };
-    loginFailed: { 
-        name: string; 
-        ipAddress: string; 
-        userAgent: string; 
-        timestamp: string; 
-        text: string 
+    loginFailed: {
+        name: string;
+        ipAddress: string;
+        userAgent: string;
+        timestamp: string;
+        text: string
+    };
+    waitlistConfirmation: {
+        email: string;
+        text: string;
     };
 }
 
@@ -63,11 +67,12 @@ export interface EmailClient {
         passwordReset: (resetLink: string) => EmailTemplate;
         githubLinked: (username: string) => EmailTemplate;
         test: () => EmailTemplate;
-        loginFailed: (params: { 
+        loginFailed: (params: {
             name: string;
             ipAddress: string;
             userAgent: string;
             timestamp: string;
         }) => EmailTemplate;
+        waitlistConfirmation: (email: string) => EmailTemplate;
     };
 }

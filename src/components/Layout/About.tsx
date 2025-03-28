@@ -15,18 +15,17 @@ export default function AboutLayout({ children }: AboutLayoutProps) {
             <div className="md:w-1/2">
               <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
                 Supercharge Your{" "}
-                <span className="text-purple-600 dark:text-purple-400">
-                  Code Search
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-github-accent via-github-link to-github-accent-hover">
+                  Development Experience
                 </span>
               </h1>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-                OctoSearch helps developers find the code they need quickly and
-                efficiently with advanced search capabilities for repositories.
+                OctoHub is a powerful, feature-rich code hosting and collaboration platform designed to enhance software development workflows. Built as a modern alternative to traditional version control platforms, OctoHub provides advanced tools for developers, teams, and organizations.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link
                   href="/search"
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors"
+                  className="px-6 py-3 bg-github-accent hover:bg-github-accent-hover text-white rounded-md font-medium transition-colors"
                 >
                   Try It Now
                 </Link>

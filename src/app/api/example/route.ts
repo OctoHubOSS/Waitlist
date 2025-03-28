@@ -4,7 +4,7 @@ import { ApiMiddleware } from '@/lib/api/middleware';
 import { createRateLimitMiddleware } from '@/lib/api/middlewares/ratelimit';
 import { RateLimitClient } from '@/lib/ratelimit/client';
 import { CachedRateLimitClient } from '@/lib/ratelimit/cache';
-import prisma from '@root/prisma/database';
+import prisma from '@/lib/database';
 import { successResponse, errors } from "@/lib/api/responses";
 import { validateQuery } from "@/lib/api/validation";
 import { z } from "zod";

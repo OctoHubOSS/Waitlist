@@ -1,4 +1,4 @@
-import prisma from '@root/prisma/database';
+import prisma from '@/lib/database';
 import { ApiClient } from '@/lib/api/client';
 import { apiSchemas, validateQuery } from '@/lib/api/validation';
 import { errors } from '@/lib/api/responses';

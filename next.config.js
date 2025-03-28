@@ -16,6 +16,19 @@ const nextConfig = {
       }
     ],
   },
+  async redirects() {
+    // Only apply redirects in production
+    if (process.env.NODE_ENV === 'development') {
+      return [
+        {
+          source: '/:path((?!coming-soon|api|_next|static|waitlist/unsubscribe|waitlist/subscribe).*)*',
+          destination: '/coming-soon',
+          permanent: true,
+        }
+      ];
+    }
+    return [];
+  }
 };
 
 module.exports = nextConfig;

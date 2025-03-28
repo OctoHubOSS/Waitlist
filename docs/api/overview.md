@@ -1,17 +1,17 @@
 ---
 title: API Overview
-description: Introduction to the OctoSearch API and common usage patterns
+description: Introduction to the OctoHub API and common usage patterns
 category: API Reference
 order: 1
 ---
 
-# OctoSearch API Overview
+# OctoHub API Overview
 
-OctoSearch provides a comprehensive API for accessing GitHub data in a structured format. This documentation covers all available endpoints, their parameters, and response formats.
+OctoHub provides a comprehensive API for managing repositories, users, organizations, and related data. This documentation covers all available endpoints, their parameters, and response formats.
 
 ## Base URL
 
-All API endpoints are relative to your OctoSearch installation. For local development, this is typically:
+All API endpoints are relative to your OctoHub installation. For local development, this is typically:
 
 ```
 http://localhost:3000/api
@@ -19,10 +19,10 @@ http://localhost:3000/api
 
 ## Authentication
 
-The OctoSearch API uses GitHub's authentication system. Personal access tokens can be provided via:
+The OctoHub API supports several authentication methods:
 
-1. Environment variables (recommended for server deployments)
-2. Session authentication (used by the OctoSearch web interface)
+1. API tokens (recommended for programmatic access)
+2. Session authentication (used by the OctoHub web interface)
 
 When making authenticated requests, higher rate limits are available.
 
@@ -55,11 +55,11 @@ Common HTTP status codes:
 
 ## Rate Limiting
 
-API requests are subject to GitHub's rate limiting. Use the `/api/rate/limit` endpoint to check your current rate limit status.
+API requests are subject to rate limiting. Use the `/api/rate/limit` endpoint to check your current rate limit status.
 
 ## API Categories
 
-The OctoSearch API is organized into the following categories:
+The OctoHub API is organized into the following categories:
 
 ### Repository APIs
 
@@ -95,7 +95,6 @@ The OctoSearch API is organized into the following categories:
 
 ### Other APIs
 
-- **Gists** - Access GitHub Gists `/api/gists`
 - **Rate Limit** - Check API usage limits `/api/rate/limit`
 - **Email** - Send notifications (admin only) `/api/email/send`
 - **Documentation** - Access API documentation `/api/docs/categories`

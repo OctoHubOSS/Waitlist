@@ -3,7 +3,7 @@ import { withApiHandler } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/api/middlewares/auth';
 import { successResponse, errors, handleApiError } from '@/lib/api/responses';
 import { tokenService } from '@/lib/auth/token-service';
-import prisma from '@root/prisma/database';
+import prisma from '@/lib/database';
 
 /**
  * POST /api/v1/tokens/:id/revoke

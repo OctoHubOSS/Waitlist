@@ -5,7 +5,7 @@ import GithubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { UserRole, UserStatus } from "@prisma/client";
 import type { GithubProfile } from "next-auth/providers/github";
-import prisma from "@root/prisma/database";
+import prisma from "@/lib/database";
 import bcrypt from "bcrypt";
 
 /**
@@ -43,60 +43,54 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        try {
-          if (!credentials?.email || !credentials?.password) {
-            throw new Error("Missing credentials");
-          }
-
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
-          });
-
-          if (!user || !user.password) {
-            throw new Error("Invalid credentials");
-          }
-
-          const isValid = await bcrypt.compare(credentials.password, user.password);
-
-          if (!isValid) {
-            throw new Error("Invalid credentials");
-          }
-
-          if (user.role === UserRole.BANNED) {
-            throw new Error("Account is banned");
-          }
-
-          // Update user status
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              lastLoginAt: new Date(),
-              lastActiveAt: new Date(),
-              status: UserStatus.ONLINE,
-            },
-          });
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            image: user.image,
-            role: user.role,
-            status: user.status,
-            lastActiveAt: user.lastActiveAt,
-            isAdmin: user.role === UserRole.ADMIN,
-          };
-        } catch (error) {
-          console.error("Auth error:", error);
-          return null;
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Missing credentials");
         }
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
+
+        if (!user || !user.password) {
+          throw new Error("Invalid credentials");
+        }
+
+        const isValid = await bcrypt.compare(credentials.password, user.password);
+
+        if (!isValid) {
+          throw new Error("Invalid credentials");
+        }
+
+        if (user.role === UserRole.BANNED) {
+          throw new Error("Account is banned");
+        }
+
+        // Update user status
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            lastLoginAt: new Date(),
+            lastActiveAt: new Date(),
+            status: UserStatus.ONLINE,
+          },
+        });
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+          role: user.role,
+          status: user.status,
+          lastActiveAt: user.lastActiveAt,
+          isAdmin: user.role === UserRole.ADMIN,
+        };
       },
     }),
     GithubProvider({
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
       async profile(profile: GithubProfile) {
-        // Find or create user
         const user = await prisma.user.upsert({
           where: { email: profile.email || "" },
           update: {},
@@ -149,61 +143,49 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account, profile, isNewUser }) {
-      try {
-        // Log successful login
+      await prisma.userActivity.create({
+        data: {
+          userId: user.id,
+          action: "LOGIN_SUCCESS",
+          metadata: {
+            provider: account?.provider || "unknown",
+            isNewUser: isNewUser || false,
+            profile: profile ? JSON.parse(JSON.stringify(profile)) : null,
+          },
+        },
+      });
+
+      if (account?.provider === "github" && profile) {
+        const githubProfile = profile as GithubProfile;
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            githubId: githubProfile.id.toString(),
+            githubUsername: githubProfile.login,
+            githubDisplayName: githubProfile.name || githubProfile.login,
+          },
+        });
+      }
+    },
+    async signOut({ session, token }) {
+      if (session?.user?.id) {
         await prisma.userActivity.create({
           data: {
-            userId: user.id,
-            action: "LOGIN_SUCCESS",
+            userId: session.user.id,
+            action: "LOGOUT",
             metadata: {
-              provider: account?.provider || "unknown",
-              isNewUser: isNewUser || false,
-              profile: profile ? JSON.parse(JSON.stringify(profile)) : null,
+              provider: token.provider || "unknown",
             },
           },
         });
 
-        // If using GitHub, update GitHub-related fields
-        if (account?.provider === "github" && profile) {
-          const githubProfile = profile as GithubProfile;
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              githubId: githubProfile.id.toString(),
-              githubUsername: githubProfile.login,
-              githubDisplayName: githubProfile.name || githubProfile.login,
-            },
-          });
-        }
-      } catch (error) {
-        console.error("SignIn event error:", error);
-      }
-    },
-    async signOut({ session, token }) {
-      try {
-        if (session?.user?.id) {
-          // Log sign out
-          await prisma.userActivity.create({
-            data: {
-              userId: session.user.id,
-              action: "LOGOUT",
-              metadata: {
-                provider: token.provider || "unknown",
-              },
-            },
-          });
-
-          // Update user status
-          await prisma.user.update({
-            where: { id: session.user.id },
-            data: {
-              status: UserStatus.OFFLINE,
-              lastActiveAt: new Date(),
-            },
-          });
-        }
-      } catch (error) {
-        console.error("SignOut event error:", error);
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: {
+            status: UserStatus.OFFLINE,
+            lastActiveAt: new Date(),
+          },
+        });
       }
     },
   },
@@ -211,12 +193,11 @@ export const authOptions: NextAuthOptions = {
 
 /**
  * Helper to get the server session
- * Use this in server components and API routes
  */
 export const getAuthSession = () => getServerSession(authOptions);
 
 /**
- * Helper to check if a user is authenticated on the server
+ * Helper to check if a user is authenticated
  */
 export const isAuthenticated = async () => {
   const session = await getAuthSession();
@@ -250,19 +231,19 @@ export function validatePassword(password: string): PasswordValidationResult {
   }
 
   if (PASSWORD_REQUIREMENTS.requireUppercase && !/[A-Z]/.test(password)) {
-    errors.push('Password must contain at least one uppercase letter');
+    errors.push("Password must contain at least one uppercase letter");
   }
 
   if (PASSWORD_REQUIREMENTS.requireLowercase && !/[a-z]/.test(password)) {
-    errors.push('Password must contain at least one lowercase letter');
+    errors.push("Password must contain at least one lowercase letter");
   }
 
   if (PASSWORD_REQUIREMENTS.requireNumbers && !/\d/.test(password)) {
-    errors.push('Password must contain at least one number');
+    errors.push("Password must contain at least one number");
   }
 
-  if (PASSWORD_REQUIREMENTS.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    errors.push('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
+  if (PASSWORD_REQUIREMENTS.requireSpecialChars && !/[!@#$%^&*(),.?\":{}|<>]/.test(password)) {
+    errors.push("Password must contain at least one special character (!@#$%^&*(),.?\":{}|<>)");
   }
 
   return {

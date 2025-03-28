@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@root/prisma/database";
+import { prisma } from "@/lib/database";
 import { UserRole, UserStatus } from "@prisma/client";
 import { sendEmail } from "@/lib/email";
 import { verifyPassword } from "@/lib/auth";

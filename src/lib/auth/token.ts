@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import prisma from '@root/prisma/database';
+import prisma from '@/lib/database';
 import { ApiToken, TokenType } from '@prisma/client';
 import { randomBytes, createHash } from 'crypto';
 import { API_SCOPES, ApiScope, hasScope } from '@/lib/api/scopes';
@@ -19,10 +19,13 @@ export async function getToken(req: NextRequest): Promise<ApiToken | null> {
         return null;
     }
 
+    // Hash the token for comparison
+    const hashedToken = hashToken(token);
+
     // Find and validate token
     const apiToken = await prisma.apiToken.findFirst({
         where: {
-            token,
+            token: hashedToken, // Use hashed token
             deletedAt: null,
             OR: [
                 { expiresAt: null },

@@ -1,17 +1,17 @@
 ---
 title: Token Usage
-description: OctoSearch API Token Usage Guide
+description: OctoHub API Token Usage Guide
 category: API Reference
 order: 18
 ---
 
-# OctoSearch API Token Usage Guide
+# OctoHub API Token Usage Guide
 
-This guide explains how to use API tokens to access the OctoSearch API programmatically.
+This guide explains how to use API tokens to access the OctoHub API programmatically.
 
 ## Authentication
 
-To authenticate with the OctoSearch API, include your token in the Authorization header of your request:
+To authenticate with the OctoHub API, include your token in the Authorization header of your request:
 
 ```
 Authorization: Bearer YOUR_API_TOKEN
@@ -22,7 +22,7 @@ Authorization: Bearer YOUR_API_TOKEN
 All API requests should be sent to:
 
 ```
-https://api.octosearch.dev/v1
+https://api.octohub.dev/v1
 ```
 
 ## Code Examples
@@ -32,14 +32,14 @@ https://api.octosearch.dev/v1
 ```bash
 # Make a basic request with curl
 curl -H "Authorization: Bearer YOUR_API_TOKEN" \
-  https://api.octosearch.dev/v1/search?q=react
+  https://api.octohub.dev/v1/search?q=react
 
 # Upload data with curl
 curl -X POST \
   -H "Authorization: Bearer YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name": "My Repository", "description": "A test repository"}' \
-  https://api.octosearch.dev/v1/repos
+  https://api.octohub.dev/v1/repos
 ```
 
 ### JavaScript/TypeScript
@@ -47,7 +47,7 @@ curl -X POST \
 ```javascript
 // Using fetch API in JavaScript/TypeScript
 const fetchData = async () => {
-  const response = await fetch("https://api.octosearch.dev/v1/search?q=react", {
+  const response = await fetch("https://api.octohub.dev/v1/search?q=react", {
     headers: {
       Authorization: "Bearer YOUR_API_TOKEN",
     },
@@ -61,7 +61,7 @@ const fetchData = async () => {
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://api.octosearch.dev/v1",
+  baseURL: "https://api.octohub.dev/v1",
   headers: {
     Authorization: "Bearer YOUR_API_TOKEN",
   },
@@ -95,7 +95,7 @@ headers = {
 
 # Get data
 response = requests.get(
-    'https://api.octosearch.dev/v1/search',
+    'https://api.octohub.dev/v1/search',
     params={'q': 'react'},
     headers=headers
 )
@@ -104,7 +104,7 @@ print(data)
 
 # Post data
 response = requests.post(
-    'https://api.octosearch.dev/v1/repos',
+    'https://api.octohub.dev/v1/repos',
     json={
         'name': 'My Repository',
         'description': 'A test repository'
@@ -130,7 +130,7 @@ import (
 
 func main() {
 	// Get data
-	req, err := http.NewRequest("GET", "https://api.octosearch.dev/v1/search?q=react", nil)
+	req, err := http.NewRequest("GET", "https://api.octohub.dev/v1/search?q=react", nil)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
@@ -166,7 +166,7 @@ func main() {
 		return
 	}
 
-	postReq, err := http.NewRequest("POST", "https://api.octosearch.dev/v1/repos", bytes.NewBuffer(jsonData))
+	postReq, err := http.NewRequest("POST", "https://api.octohub.dev/v1/repos", bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println("Error creating POST request:", err)
 		return

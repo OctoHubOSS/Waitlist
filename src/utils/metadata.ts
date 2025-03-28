@@ -93,3 +93,75 @@ export function generateRepoMetadata(
     canonicalUrl: `/repo/${ownerName}/${repoName}`,
   });
 }
+
+/**
+ * Generate waitlist-specific metadata
+ */
+export function generateWaitlistMetadata(): Metadata {
+  return generateMetadata({
+    title: "Join the Waitlist",
+    description: "Be among the first to experience OctoHub - Join our exclusive waitlist for early access to the next generation of code collaboration.",
+    keywords: ["waitlist", "early access", "beta", "GitHub collaboration"],
+    canonicalUrl: "/waitlist",
+  });
+}
+
+/**
+ * Generate unsubscribe-specific metadata
+ */
+export function generateUnsubscribeMetadata(): Metadata {
+  return generateMetadata({
+    title: "Unsubscribe",
+    description: "Manage your OctoHub waitlist subscription preferences.",
+    keywords: ["unsubscribe", "waitlist", "preferences"],
+    canonicalUrl: "/waitlist/unsubscribe",
+  });
+}
+
+/**
+ * Generate FAQ-specific metadata
+ */
+export function generateFAQMetadata(): Metadata {
+  return generateMetadata({
+    title: "Frequently Asked Questions",
+    description: "Find answers to common questions about OctoHub, our features, and how we're revolutionizing code collaboration.",
+    keywords: ["FAQ", "questions", "help", "support", "GitHub collaboration"],
+    canonicalUrl: "/faq",
+  });
+}
+
+/**
+ * Generate privacy policy-specific metadata
+ */
+export function generatePrivacyMetadata(): Metadata {
+  return generateMetadata({
+    title: "Privacy Policy",
+    description: "Learn about how OctoHub collects, uses, and protects your data.",
+    keywords: ["privacy", "data protection", "terms", "policy"],
+    canonicalUrl: "/privacy",
+  });
+}
+
+/**
+ * Generate terms-specific metadata
+ */
+export function generateTermsMetadata(): Metadata {
+  return generateMetadata({
+    title: "Terms of Service",
+    description: "Read about the terms and conditions for using OctoHub's services.",
+    keywords: ["terms", "conditions", "legal", "service agreement"],
+    canonicalUrl: "/terms",
+  });
+}
+
+/**
+ * Generate coming soon-specific metadata
+ */
+export function generateComingSoonMetadata(): Metadata {
+  return generateMetadata({
+    title: "Coming Soon",
+    description: "Get ready for OctoHub - The next generation of code collaboration is just around the corner. Join our waitlist to be the first to know when we launch!",
+    keywords: ["coming soon", "launch", "early access", "GitHub collaboration", "waitlist"],
+    canonicalUrl: "/coming-soon",
+  });
+}

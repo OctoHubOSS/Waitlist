@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ApiClient } from '@/lib/api/client';
 import { emailClient } from '@/lib/email/client';
-import prisma from '@root/prisma/database';
-import { ApiContext } from '@/lib/api/middleware';
-
-// Create API client instance
-const apiClient = new ApiClient(prisma);
 
 /**
  * POST /api/test/email
  * 
  * Sends a test email to verify the email configuration.
- * This endpoint is protected by rate limiting and requires proper authentication.
  * 
  * Request body:
  * - to: Array of email addresses or recipient objects to send the test email to
@@ -19,7 +12,6 @@ const apiClient = new ApiClient(prisma);
  * Response:
  * - 200: Email sent successfully
  * - 400: Invalid request or missing recipients
- * - 429: Rate limit exceeded
  * - 500: Server error or email sending failed
  */
 export async function POST(req: NextRequest) {
@@ -41,11 +33,7 @@ export async function POST(req: NextRequest) {
         // Send the test email
         const result = await emailClient.sendEmail({
             to: recipients,
-            ...template,
-            from: {
-                address: 'test@octohub.dev',
-                name: 'OctoHub Test'
-            }
+            ...template
         });
 
         if (!result.success && result.error) {

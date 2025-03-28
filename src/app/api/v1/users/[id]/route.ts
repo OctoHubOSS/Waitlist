@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import prisma from '@root/prisma/database';
+import prisma from '@/lib/database';
 import { errors, handleApiError, successResponse } from '@/lib/api/responses';
 import { ApiClient } from '@/lib/api/client';
 import { withOptionalAuth } from '@/lib/api/middlewares/auth';

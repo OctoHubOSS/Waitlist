@@ -1,5 +1,5 @@
 import { RateLimitContext, RateLimitInfo, RateLimitResult, RateLimitRule } from '@/types/ratelimit';
-import prisma from '@root/prisma/database';
+import prisma from '@/lib/database';
 
 export class RateLimitClient {
     private defaultRule: RateLimitRule;

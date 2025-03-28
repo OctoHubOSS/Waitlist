@@ -26,7 +26,7 @@ export default function TestEmail({ timestamp }: TestEmailProps) {
                     <Text className="text-github-text-secondary">
                         <strong>Generated at:</strong> {new Date(timestamp).toLocaleString()}
                     </Text>
-                    
+
                     <Code className="mt-4 text-sm font-mono bg-github-dark p-3 rounded border border-github-border text-github-text">
                         {`{ 
                               "success": true,
@@ -34,7 +34,7 @@ export default function TestEmail({ timestamp }: TestEmailProps) {
                               "timestamp": "${timestamp}"
                         }`}
                     </Code>
-                    
+
                     <Text className="text-github-text-secondary mt-4">
                         You can also use inline <Code>code snippets</Code> for variables like <Code>NODE_ENV</Code>.
                     </Text>

@@ -4,9 +4,9 @@ import FeaturesList from "@/components/Features/FeaturesList";
 import { FaSearch, FaLightbulb, FaCode, FaHeart } from "react-icons/fa";
 
 export const metadata: Metadata = {
-  title: "About OctoSearch | Advanced Code Search",
+  title: "About OctoHub | Advanced Code Platform",
   description:
-    "OctoSearch is a powerful tool for developers to search code across repositories with semantic understanding and lightning-fast results.",
+    "OctoHub is a powerful platform for developers to collaborate, manage repositories, and enhance their development workflows.",
 };
 
 export default function AboutPage() {
@@ -18,13 +18,13 @@ export default function AboutPage() {
         {/* Hero Section */}
         <section className="relative p-6 md:p-10 rounded-2xl bg-github-dark-secondary border border-github-border overflow-hidden glow-effect">
           <h1 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-            Revolutionizing Code Search
+            Revolutionizing Development Workflows
           </h1>
           <p className="text-lg leading-relaxed mb-8">
-            OctoSearch was built by developers, for developers. Our mission is
-            to make code discovery faster and smarter.
+            OctoHub was built by developers, for developers. Our mission is
+            to make software development more collaborative and efficient.
           </p>
-          <div className="h-1 w-24 bg-gradient-to-r from-neon-purple to-neon-blue rounded-full" />
+          <div className="h-1 w-24 bg-gradient-to-r from-github-accent to-github-link rounded-full" />
         </section>
 
         {/* Our Approach */}
@@ -33,13 +33,13 @@ export default function AboutPage() {
             <FaLightbulb className="text-neon-cyan" /> Our Approach
           </h2>
           <p className="text-lg leading-relaxed">
-            We use advanced search technology with code-aware algorithms that
-            understand functions, patterns, and relationships between code
+            We use advanced technology with code-aware algorithms that
+            understand repositories, collaborations, and relationships between code
             elements.
           </p>
           <div className="card card-hover p-6">
             <h3 className="text-xl font-semibold mb-4 text-purple-300">
-              Why OctoSearch?
+              Why OctoHub?
             </h3>
             <ul className="space-y-4">
               {[
@@ -51,14 +51,14 @@ export default function AboutPage() {
                 },
                 {
                   icon: <FaCode />,
-                  title: "Cross-repository search",
-                  desc: "Find patterns across your entire codebase",
+                  title: "Cross-repository collaboration",
+                  desc: "Manage workflows across your entire codebase",
                   color: "neon-blue",
                 },
                 {
                   icon: <FaSearch />,
-                  title: "Contextual results",
-                  desc: "Prioritized code based on relevance",
+                  title: "Contextual insights",
+                  desc: "Prioritized development based on relevance",
                   color: "neon-cyan",
                 },
               ].map(({ icon, title, desc, color }, i) => (
@@ -101,11 +101,11 @@ export default function AboutPage() {
             <div className="space-y-3">
               {[
                 {
-                  text: "Code search indexing algorithms",
+                  text: "Repository management tools",
                   color: "neon-purple",
                 },
                 { text: "Developer experience tooling", color: "neon-blue" },
-                { text: "Documentation generators", color: "neon-cyan" },
+                { text: "Collaboration platforms", color: "neon-cyan" },
               ].map(({ text, color }, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full bg-${color}`} />
@@ -123,22 +123,22 @@ export default function AboutPage() {
           </h2>
           <p className="text-lg leading-relaxed">
             Have questions or feedback? Reach us at
-            <a href="mailto:support@octosearch.dev" className="link">
+            <a href="mailto:support@octohub.dev" className="link">
               {" "}
-              support@octosearch.dev{" "}
+              support@octohub.dev{" "}
             </a>
             or visit our
-            <a href="https://github.com/octosearch/feedback" className="link">
+            <a href="https://github.com/octohuboss/website" className="link">
               {" "}
               GitHub repository
             </a>
             .
           </p>
           <div className="flex flex-col sm:flex-row gap-4 mt-6">
-            <a href="mailto:support@octosearch.dev" className="btn btn-primary">
+            <a href="mailto:hey@octohub.dev" className="btn btn-primary">
               Contact Us
             </a>
-            <a href="https://github.com/octosearch/feedback" className="btn">
+            <a href="https://github.com/octohuboss/website" className="btn">
               GitHub Feedback
             </a>
           </div>

@@ -245,6 +245,8 @@ model Repository {
   wikiPages         WikiPage[]
   workflows         Workflow[]
   topics            Topic[]                @relation("RepositoryToTopic")
+  files             RepositoryFile[]
+  directories       RepositoryDirectory[]
 
   @@unique([orgId, name])
   @@unique([ownerId, name])
@@ -1308,6 +1310,64 @@ model SearchRefinement {
   @@index([timestamp])
 }
 
+model RepositoryFile {
+  id           String                  @id @default(cuid())
+  name         String
+  path         String                  @unique
+  size         Int                     @default(0)
+  contentType  String?
+  isBinary     Boolean                 @default(false)
+  isExecutable Boolean                 @default(false)
+  isSymlink    Boolean                 @default(false)
+  repositoryId String
+  directoryId  String?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  deletedAt    DateTime?
+  repository   Repository              @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  directory    RepositoryDirectory?    @relation(fields: [directoryId], references: [id], onDelete: Cascade)
+  versions     RepositoryFileVersion[]
+
+  @@unique([repositoryId, path])
+  @@index([repositoryId])
+  @@index([directoryId])
+  @@index([deletedAt])
+}
+
+model RepositoryDirectory {
+  id           String                @id @default(cuid())
+  name         String
+  path         String                @unique
+  repositoryId String
+  parentId     String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  deletedAt    DateTime?
+  repository   Repository            @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  parent       RepositoryDirectory?  @relation("ParentDirectory", fields: [parentId], references: [id])
+  children     RepositoryDirectory[] @relation("ParentDirectory")
+  files        RepositoryFile[]
+
+  @@unique([repositoryId, path])
+  @@index([repositoryId])
+  @@index([parentId])
+  @@index([deletedAt])
+}
+
+model RepositoryFileVersion {
+  id          String         @id @default(cuid())
+  fileId      String
+  version     Int            @default(1)
+  size        Int            @default(0)
+  contentHash String         @unique
+  storagePath String
+  createdAt   DateTime       @default(now())
+  file        RepositoryFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([fileId, version])
+  @@index([fileId])
+}
+
 enum RepoSource {
   OCTOFLOW
   GITHUB
@@ -1515,4 +1575,25 @@ enum UserRole {
   USER
   READONLY
   BANNED
+}
+
+model WaitlistSubscriber {
+  id        String         @id @default(cuid())
+  email     String         @unique
+  name      String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  status    WaitlistStatus @default(PENDING)
+  source    String?        @db.Text
+  metadata  Json?
+
+  @@index([email, status])
+  @@index([createdAt])
+}
+
+enum WaitlistStatus {
+  PENDING
+  SUBSCRIBED
+  UNSUBSCRIBED
+  BOUNCED
 }

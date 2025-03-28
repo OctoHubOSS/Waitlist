@@ -171,7 +171,7 @@ export default function Navigation() {
             src="/logo.webp"
           />
         </div>
-        <span>OctoHub</span>
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-github-accent via-github-link to-github-accent-hover text-2xl">OctoHub</span>
       </Link>
 
       <button

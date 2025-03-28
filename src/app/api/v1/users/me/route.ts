@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { withApiHandler } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/api/middlewares/auth';
 import { successResponse, handleApiError } from '@/lib/api/responses';
-import prisma from '@root/prisma/database';
+import prisma from '@/lib/database';
 
 /**
  * GET /api/v1/users/me

@@ -4,6 +4,8 @@ import PasswordResetEmail from '@/templates/email/auth/password-reset';
 import GithubLinkedEmail from '@/templates/email/auth/github-linked';
 import TestEmail from '@/templates/email/devs/test';
 import LoginFailedEmail from '@/templates/email/auth/login-failed';
+import WaitlistConfirmationEmail from '@/templates/email/waitlist/confirmation';
+import WaitlistUnsubscribeEmail from '@/templates/email/waitlist/unsubscribe';
 
 /**
  * Props for each email template type
@@ -27,6 +29,12 @@ export type EmailTemplateProps = {
     userAgent: string;
     timestamp: string;
   };
+  waitlistConfirmation: {
+    email: string;
+  };
+  waitlistUnsubscribe: {
+    email: string;
+  };
 };
 
 /**
@@ -41,6 +49,8 @@ const templateComponents: {
   githubLinked: GithubLinkedEmail,
   test: TestEmail,
   loginFailed: LoginFailedEmail,
+  waitlistConfirmation: WaitlistConfirmationEmail,
+  waitlistUnsubscribe: WaitlistUnsubscribeEmail,
 };
 
 /**
@@ -63,10 +73,10 @@ export function createEmailElement<T extends TemplateName>(
   props: EmailTemplateProps[T]
 ) {
   const TemplateComponent = templateComponents[templateName];
-  
+
   if (!TemplateComponent) {
     throw new Error(`Email template "${templateName}" not found`);
   }
-  
+
   return React.createElement(TemplateComponent, props);
 }

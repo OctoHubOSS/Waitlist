@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { FaArrowRight } from "react-icons/fa";
 
 interface FeatureCardProps {
   id: string;
@@ -12,64 +11,75 @@ interface FeatureCardProps {
   linkText: string;
 }
 
-// Make sure the export is clear and straightforward
-const FeatureCard = ({ id, icon, title, description, link, linkText }: FeatureCardProps) => {
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
+const FeatureCard = ({
+  id,
+  icon,
+  title,
+  description,
+  link,
+  linkText,
+}: FeatureCardProps) => {
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
       y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 12,
-      },
+      transition: { duration: 0.5 }
     },
-    hover: {
-      scale: 1.03,
-      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 20,
-      },
-    },
+    hover: { 
+      y: -10,
+      boxShadow: "0 15px 30px rgba(0, 0, 0, 0.2)",
+      transition: { duration: 0.3 }
+    }
   };
 
   return (
     <motion.div
-      key={id}
-      className="bg-github-dark-secondary border border-github-border rounded-lg p-6 hover:border-github-accent/50 transition-all shadow-md"
-      variants={itemVariants}
+      className="flex flex-col h-full rounded-xl overflow-hidden bg-gradient-to-br from-github-dark to-github-dark-secondary border border-github-border hover:border-github-accent-hover/50 transition-all duration-300"
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
       whileHover="hover"
     >
-      <div className="flex items-center gap-3 mb-3">
-        <motion.div
-          className="bg-github-accent/20 p-3 rounded-full"
-          whileHover={{ scale: 1.1, rotate: 5 }}
-          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+      <div className="p-6 flex-grow flex flex-col">
+        <div className="flex items-center mb-4">
+          <div className="p-3 rounded-lg bg-github-accent/20 mr-4">
+            {icon}
+          </div>
+          <h3 className="text-xl font-bold text-white">{title}</h3>
+        </div>
+        
+        <p className="text-gray-300 mb-6 flex-grow">{description}</p>
+        
+        <Link 
+          href={link}
+          className="mt-auto inline-flex items-center text-github-accent hover:text-github-accent-hover font-medium group"
         >
-          {icon}
-        </motion.div>
-        <h3 className="text-lg font-medium">{title}</h3>
+          <span>{linkText}</span>
+          <svg
+            className="ml-2 h-4 w-4 transform transition-transform group-hover:translate-x-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 7l5 5m0 0l-5 5m5-5H6"
+            />
+          </svg>
+        </Link>
       </div>
-      <p className="text-github-text-secondary">{description}</p>
-      <Link href={link} className="inline-flex items-center mt-4 text-github-accent hover:text-github-accent-hover font-medium">
-        <motion.span
-          initial={{ x: 0 }}
-          whileHover={{ x: 4 }}
-          transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        >
-          {linkText}
-        </motion.span>
-        <motion.div
-          initial={{ x: 0, opacity: 1 }}
-          whileHover={{ x: 8, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        >
-          <FaArrowRight className="ml-2 h-4 w-4" />
-        </motion.div>
-      </Link>
+      
+      {/* Accent border at the bottom with gradient based on ID */}
+      <div 
+        className="h-1 w-full bg-gradient-to-r from-github-accent to-github-link"
+        style={{
+          // Slightly different gradient angle based on ID for variety
+          transform: `rotate(${(parseInt(id.charCodeAt(0).toString()) % 5) * 2}deg)`,
+        }}
+      ></div>
     </motion.div>
   );
 };

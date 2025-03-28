@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import prisma from '@root/prisma/database';
+import prisma from '@/lib/database';
 import { ApiToken, TokenType, AuditAction, AuditCategory } from '@prisma/client';
 import { getToken, generateApiToken, checkTokenScope, revokeToken, hashToken } from './token';
 import { API_SCOPES, ApiScope, hasScope } from '@/lib/api/scopes';
@@ -83,7 +83,7 @@ export class TokenService {
         // Not found in cache, look up in database
         const token = await prisma.apiToken.findFirst({
             where: {
-                token: hashedToken,
+                token: hashedToken, // Use hashed token
                 deletedAt: null,
                 OR: [
                     { expiresAt: null },
@@ -338,6 +338,35 @@ export class TokenService {
             });
         } catch (error) {
             console.error('Failed to log token action:', error);
+        }
+    }
+
+    /**
+     * Refresh an expired token and return a new token
+     * 
+     * @param token The expired token
+     * @returns A new refreshed token or null if the token cannot be refreshed
+     */
+    async refreshToken(token: string): Promise<string | null> {
+        try {
+            // Example implementation: Make a request to the token refresh endpoint
+            const response = await fetch('/api/auth/refresh-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                return null;
+            }
+
+            const data = await response.json();
+            return data.token || null;
+        } catch (error) {
+            console.error('Failed to refresh token:', error);
+            return null;
         }
     }
 }
