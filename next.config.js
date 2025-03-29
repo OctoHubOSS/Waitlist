@@ -15,19 +15,6 @@ const nextConfig = {
         hostname: 'minivault.cordx.lol'
       }
     ],
-  },
-  async redirects() {
-    // Only apply redirects in production
-    if (process.env.NODE_ENV === 'production') {
-      return [
-        {
-          source: '/:path((?!coming-soon|_next|static|public|waitlist/unsubscribe|waitlist/subscribe).*)*',
-          destination: '/coming-soon',
-          permanent: true,
-        }
-      ];
-    }
-    return [];
   }
 };
 

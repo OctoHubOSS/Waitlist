@@ -1,11 +1,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { FiAlertTriangle } from 'react-icons/fi';
-import { generateNotFoundMetadata } from "@/utils/metadata";
+import BackButton from '@/components/BackButton';
 import { Metadata } from "next";
-import BackButton from '@/components/ui/BackButton';
 
-export const metadata: Metadata = generateNotFoundMetadata();
+export const metadata: Metadata = {
+    title: "Not Found",
+    description: "The page you were looking for doesn't exist or you may not have access to it.",
+}
 
 export default function NotFound() {
   return (

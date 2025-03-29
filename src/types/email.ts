@@ -12,17 +12,6 @@ export interface EmailRecipient {
 
 // Email template variables
 export interface EmailTemplateVars {
-    welcome: { name: string; text: string };
-    passwordReset: { resetLink: string; text: string };
-    githubLinked: { username: string; text: string };
-    test: { timestamp: string; text: string };
-    loginFailed: {
-        name: string;
-        ipAddress: string;
-        userAgent: string;
-        timestamp: string;
-        text: string
-    };
     waitlistConfirmation: {
         email: string;
         text: string;
@@ -63,11 +52,6 @@ export interface EmailClientConfig {
 export interface EmailClient {
     sendEmail(options: SendEmailOptions): Promise<SendEmailResult>;
     emailTemplates: {
-        welcome: (name: string) => EmailTemplate;
-        passwordReset: (resetLink: string, expiresInMinutes: number) => EmailTemplate;
-        githubLinked: (username: string) => EmailTemplate;
-        test: () => EmailTemplate;
-        loginFailed: (params: { email: string; attempts: number; maxAttempts: number; cooldownMinutes: number; }) => EmailTemplate;
         waitlistConfirmation: (email: string) => EmailTemplate;
         waitlistUnsubscribe: (email: string) => EmailTemplate;
     };
