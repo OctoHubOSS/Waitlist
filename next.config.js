@@ -18,10 +18,10 @@ const nextConfig = {
   },
   async redirects() {
     // Only apply redirects in production
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'production') {
       return [
         {
-          source: '/:path((?!coming-soon|api|_next|static|public|waitlist/unsubscribe|waitlist/subscribe).*)*',
+          source: '/:path((?!coming-soon|_next|static|public|waitlist/unsubscribe|waitlist/subscribe).*)*',
           destination: '/coming-soon',
           permanent: true,
         }

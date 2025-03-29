@@ -155,7 +155,6 @@ export default function ComingSoonPage() {
                 width={96}
                 height={96}
                 className="relative z-10"
-                priority
               />
             </motion.div>
 
