@@ -87,7 +87,7 @@ export default function TokenDashboard({
           <FaKey className="mx-auto h-12 w-12 text-github-text-secondary mb-4" />
           <h3 className="text-xl font-medium text-white mb-2">No API Tokens Found</h3>
           <p className="text-github-text-secondary mb-6">
-            Create an API token to access OctoSearch programmatically.
+            You haven&apos;t created any personal access tokens yet.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4">

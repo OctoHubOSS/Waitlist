@@ -1,7 +1,7 @@
 import React from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { generateMetadata } from "@/utils/metadata";
+import { generateDocsMetadata } from "@/utils/metadata";
 import { getDocBySlug, getAllDocs } from "@/utils/documentation/markdown";
 import MarkdownContent from "@/components/Docs/MarkdownContent";
 
@@ -15,18 +15,30 @@ export async function generateStaticParams() {
     });
 }
 
+interface PageProps {
+    params: Promise<{
+        slug: string[];
+    }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const resolvedParams = await params;
+    return generateDocsMetadata(resolvedParams.slug);
+}
+
 // Page component
-export default async function DocPage({
-    params,
-}: {
-    params: { slug?: string[] };
-}) {
+export default async function DocPage({ params }: PageProps) {
     try {
-        // Await the params object before using its properties
-        const awaitedParams = await params;
+        // Await the params object
+        const resolvedParams = await params;
+        const { slug } = resolvedParams;
+
+        if (!slug || slug.length === 0) {
+            notFound();
+        }
 
         // Join slug parts to form the complete slug path
-        const fullSlug: any = awaitedParams.slug?.join("/");
+        const fullSlug = slug.join("/");
 
         // Fetch the document
         const doc = await getDocBySlug(fullSlug);
@@ -40,10 +52,10 @@ export default async function DocPage({
             <article className="w-full px-0">
                 <header className="mb-2 px-0">
                     <h1 className="text-3xl font-bold text-white mb-2">
-                        {doc.metadata.title}
+                        {doc.data.title}
                     </h1>
-                    {doc.metadata.description && (
-                        <p className="text-gray-400 text-lg">{doc.metadata.description}</p>
+                    {doc.data.description && (
+                        <p className="text-gray-400 text-lg">{doc.data.description}</p>
                     )}
                 </header>
                 <MarkdownContent content={doc.content} />

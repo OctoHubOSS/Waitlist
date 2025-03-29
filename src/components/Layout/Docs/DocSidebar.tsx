@@ -98,12 +98,12 @@ export function DocSidebar({
                                                             href={`/docs/${page.slug}`}
                                                             key={page.slug}
                                                             className={`
-                                flex items-center px-3 py-2 text-sm rounded-md transition-colors
-                                ${isActive
+                                                                flex items-center px-3 py-2 text-sm rounded-md transition-colors
+                                                                ${isActive
                                                                     ? "bg-github-accent/10 text-github-accent border-l-2 border-github-accent -ml-[2px]"
                                                                     : "text-gray-300 hover:text-white hover:bg-gray-800"
                                                                 }
-                              `}
+                                                            `}
                                                             onClick={onSidebarClose}
                                                         >
                                                             {page.icon && <IconRenderer iconName={page.icon} />}
@@ -128,12 +128,12 @@ export function DocSidebar({
                                                         href={`/docs/${page.slug}`}
                                                         key={page.slug}
                                                         className={`
-                              flex items-center px-3 py-2 text-sm rounded-md transition-colors
-                              ${isActive
+                                                            flex items-center px-3 py-2 text-sm rounded-md transition-colors
+                                                            ${isActive
                                                                 ? "bg-github-accent/10 text-github-accent border-l-2 border-github-accent -ml-[2px]"
                                                                 : "text-gray-300 hover:text-white hover:bg-gray-800"
                                                             }
-                            `}
+                                                        `}
                                                         onClick={onSidebarClose}
                                                     >
                                                         {page.icon && <IconRenderer iconName={page.icon} />}

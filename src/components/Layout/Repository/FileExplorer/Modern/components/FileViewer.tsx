@@ -200,8 +200,8 @@ export default function ModernFileViewer() {
         ) : fileContent ? (
           isImage(selectedFile.name) ? (
             <ModernImageRenderer
-              url={selectedFile.download_url as string}
-              name={selectedFile.name}
+              src={selectedFile.download_url as string}
+              alt={selectedFile.name}
             />
           ) : isMarkdown(selectedFile.name) ? (
             <ModernMarkdownRenderer content={fileContent} />

@@ -1,8 +1,8 @@
 import {
+    Button,
     Heading,
     Section,
     Text,
-    Button,
 } from "@react-email/components";
 import EmailLayout from "../../../components/EmailLayout";
 
@@ -12,31 +12,38 @@ interface WelcomeEmailProps {
 
 export default function WelcomeEmail({ name }: WelcomeEmailProps) {
     return (
-        <EmailLayout preview="Welcome to OctoHub!">
-            <Heading className="text-2xl font-bold text-gray-900 mb-6">
+        <EmailLayout preview="Welcome to OctoHub">
+            <Heading className="mb-6 text-2xl font-bold text-gray-900">
                 Welcome to OctoHub!
             </Heading>
 
             <Section className="mb-6">
-                <Text className="text-gray-700 mb-4">
-                    Hi {name},
+                <Text className="mb-4 text-gray-700">
+                    Hello {name},
                 </Text>
 
-                <Text className="text-gray-700 mb-4">
-                    We're excited to have you on board with OctoHub! Your account has been successfully created.
+                <Text className="mb-4 text-gray-700">
+                    Thank you for joining OctoHub! We&apos;re excited to have you on board and can&apos;t wait to
+                    help you manage your GitHub repositories more efficiently.
                 </Text>
 
-                <Button 
-                    className="bg-blue-600 text-white px-4 py-2 rounded"
-                    href="https://app.octohub.dev/dashboard">
+                <Text className="mb-4 text-gray-700">
+                    Get started by exploring our features:
+                </Text>
+
+                <Button
+                    className="mb-4 rounded-md bg-blue-600 px-6 py-3 text-center text-white"
+                    href="https://octohub.app/dashboard"
+                >
                     Go to Dashboard
                 </Button>
 
-                <Text className="text-gray-700 mt-4">
-                    If you have any questions, feel free to reach out to our support team.
+                <Text className="mb-4 text-gray-700">
+                    If you have any questions or need assistance, don&apos;t hesitate to reach out to our support
+                    team.
                 </Text>
 
-                <Text className="text-gray-700 mt-6">
+                <Text className="mt-6 text-gray-700">
                     Best regards,<br />
                     The OctoHub Team
                 </Text>

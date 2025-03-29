@@ -1,5 +1,7 @@
-import { version } from "@root/package.json";
 import { successResponse } from "@/lib/api/responses";
+
+// Use require for package.json since it's a CommonJS module
+const { version } = require("@root/package.json");
 
 export async function GET() {
     return successResponse({

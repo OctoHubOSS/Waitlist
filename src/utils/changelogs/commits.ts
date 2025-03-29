@@ -1,97 +1,192 @@
-import { ProcessedCommit, ProcessedCommits } from '@/types/api';
+import type { ChangelogEntry, ProcessedCommits } from '@/types/api';
+import type { Octokit } from "octokit";
+
+export interface Commit {
+    sha: string;
+    node_id: string;
+    html_url: string;
+    url: string;
+    author: {
+        login: string;
+        id: number;
+        node_id: string;
+        avatar_url: string;
+        gravatar_id: string | null;
+        url: string;
+        html_url: string;
+        followers_url: string;
+        following_url: string;
+        gists_url: string;
+        starred_url: string;
+        subscriptions_url: string;
+        organizations_url: string;
+        repos_url: string;
+        events_url: string;
+        received_events_url: string;
+        type: string;
+        site_admin: boolean;
+    } | null;
+    committer: {
+        login: string;
+        id: number;
+        node_id: string;
+        avatar_url: string;
+        gravatar_id: string | null;
+        url: string;
+        html_url: string;
+        followers_url: string;
+        following_url: string;
+        gists_url: string;
+        starred_url: string;
+        subscriptions_url: string;
+        organizations_url: string;
+        repos_url: string;
+        events_url: string;
+        received_events_url: string;
+        type: string;
+        site_admin: boolean;
+    } | null;
+    commit: {
+        author: {
+            name?: string | null;
+            email?: string | null;
+            date?: string | null;
+        } | null;
+        committer: {
+            name?: string | null;
+            email?: string | null;
+            date?: string | null;
+        } | null;
+        message: string;
+        tree: {
+            url: string;
+            sha: string;
+        };
+        url: string;
+        comment_count: number;
+        verification?: {
+            verified: boolean;
+            reason: string;
+            signature: string | null;
+            payload: string | null;
+        } | null;
+    };
+    parents: {
+        url: string;
+        sha: string;
+    }[];
+    comment_count: number;
+    files?: {
+        sha: string;
+        filename: string;
+        status: string;
+        additions: number;
+        deletions: number;
+        changes: number;
+        blob_url: string;
+        raw_url: string;
+        contents_url: string;
+        patch: string;
+    }[] | undefined;
+}
 
 /**
  * Process commits to categorize them and extract useful information
  */
-export function processCommits(commits: any[]): ProcessedCommits {
-    const result: ProcessedCommits = {
-        commits: [],
-        summary: {
-            features: 0,
-            fixes: 0,
-            improvements: 0,
-            docs: 0,
-            others: 0,
-            totalCommits: 0
-        }
+export async function processCommits(
+  octokit: Octokit,
+  commits: Commit[]
+): Promise<ProcessedCommits> {
+  const features: ChangelogEntry[] = [];
+  const fixes: ChangelogEntry[] = [];
+  const improvements: ChangelogEntry[] = [];
+  const docs: ChangelogEntry[] = [];
+  const others: ChangelogEntry[] = [];
+
+  const processedCommits: ProcessedCommits = {
+    features,
+    fixes,
+    improvements,
+    docs,
+    others,
+    totalCommits: 0,
+  };
+
+  commits.forEach((commit) => {
+    const message: string = commit?.commit?.message || "";
+    const sha: string = commit?.sha || "";
+    const shortSha: string = commit?.sha ? commit.sha.substring(0, 7) : "";
+    const authorName: string = commit?.author?.login || "";
+    const authorUrl: string = commit?.author?.html_url || "";
+    const url: string = commit?.html_url || "";
+
+    let type: "feature" | "fix" | "improvement" | "docs" | "other" = "other";
+
+    if (
+      message.toLowerCase().includes("feat:") ||
+      message.toLowerCase().includes("feature:")
+    ) {
+      type = "feature";
+    } else if (
+      message.toLowerCase().includes("fix:") ||
+      message.toLowerCase().includes("bug:")
+    ) {
+      type = "fix";
+    } else if (
+      message.toLowerCase().includes("refactor:") ||
+      message.toLowerCase().includes("perf:") ||
+      message.toLowerCase().includes("improve:") ||
+      message.toLowerCase().includes("update:")
+    ) {
+      type = "improvement";
+    } else if (
+      message.toLowerCase().includes("doc:") ||
+      message.toLowerCase().includes("docs:") ||
+      message.toLowerCase().includes("readme:")
+    ) {
+      type = "docs";
+    }
+
+    const cleanedMessage = message
+      .replace(
+        /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build)(\([a-z0-9_-]+\))?:\s*/i,
+        ""
+      )
+      .replace(/\[skip ci\]/gi, "")
+      .replace(/\[ci skip\]/gi, "");
+
+    const commitEntry: ChangelogEntry = {
+      sha,
+      shortSha,
+      message: cleanedMessage,
+      authorName,
+      authorUrl,
+      url,
+      type,
     };
 
-    commits.forEach(commit => {
-        if (!commit || !commit.commit) return;
+    switch (type) {
+      case "feature":
+        features.push(commitEntry);
+        break;
+      case "fix":
+        fixes.push(commitEntry);
+        break;
+      case "improvement":
+        improvements.push(commitEntry);
+        break;
+      case "docs":
+        docs.push(commitEntry);
+        break;
+      default:
+        others.push(commitEntry);
+        break;
+    }
+  });
 
-        const message = commit.commit.message || '';
-        const firstLine = getCommitTitle(message);
-        let type: 'feature' | 'fix' | 'improvement' | 'docs' | 'other' = "other";
+  processedCommits.totalCommits = commits.length;
 
-        // Match the categorization logic from the client component more closely
-        if (
-            /^feat|feature|add|enhance|new/i.test(firstLine) ||
-            message.toLowerCase().includes('feat:') ||
-            message.toLowerCase().includes('feature:')
-        ) {
-            type = "feature";
-            result.summary.features++;
-        } else if (
-            /^fix|bug|issue|resolve|close/i.test(firstLine) ||
-            message.toLowerCase().includes('fix:') ||
-            message.toLowerCase().includes('bug:')
-        ) {
-            type = "fix";
-            result.summary.fixes++;
-        } else if (
-            /^refactor|perf|improve|update|optimize|chore/i.test(firstLine) ||
-            message.toLowerCase().includes('refactor:') ||
-            message.toLowerCase().includes('perf:') ||
-            message.toLowerCase().includes('improve:') ||
-            message.toLowerCase().includes('update:')
-        ) {
-            type = "improvement";
-            result.summary.improvements++;
-        } else if (
-            /^doc|readme|changelog/i.test(firstLine) ||
-            message.toLowerCase().includes('doc:') ||
-            message.toLowerCase().includes('docs:') ||
-            message.toLowerCase().includes('readme:')
-        ) {
-            type = "docs";
-            result.summary.docs++;
-        } else {
-            result.summary.others++;
-        }
-
-        // Format commit data similar to how the client component does
-        result.commits.push({
-            sha: commit.sha || '',
-            shortSha: commit.sha ? commit.sha.substring(0, 7) : '',
-            message: cleanCommitMessage(firstLine), // Clean up message for better display
-            fullMessage: message,
-            date: commit.commit.author?.date || null,
-            author: {
-                name: commit.commit.author?.name || null,
-                email: commit.commit.author?.email || null,
-                login: commit.author?.login || null,
-                avatar_url: commit.author?.avatar_url || null
-            },
-            url: commit.html_url || '',
-            type
-        });
-    });
-
-    result.summary.totalCommits = commits.length;
-
-    // Sort commits by type: features first, then fixes, then improvements, then docs, then others
-    result.commits.sort((a, b) => {
-        const typeOrder = {
-            feature: 0,
-            fix: 1,
-            improvement: 2,
-            docs: 3,
-            other: 4
-        };
-        return typeOrder[a.type] - typeOrder[b.type];
-    });
-
-    return result;
+  return processedCommits;
 }
 
 /**
@@ -125,45 +220,9 @@ export function getCommitTitle(message: string): string {
  * Generate a formatted markdown body from processed commits
  */
 export function generateFormattedBody(processedCommits: ProcessedCommits): string {
-    const { commits, summary } = processedCommits;
+    const { features, fixes, improvements, docs, others } = processedCommits;
 
-    if (commits.length === 0) {
-        return "No changes found for this release.";
-    }
-
-    // Group commits by type
-    const features: string[] = [];
-    const fixes: string[] = [];
-    const improvements: string[] = [];
-    const docs: string[] = [];
-    const others: string[] = [];
-
-    commits.forEach((commit: ProcessedCommit) => {
-        const message = commit.message;
-        // Format exactly like the client component does
-        const formattedItem = `- ${message} ([${commit.shortSha}](${commit.url}))`;
-
-        switch (commit.type) {
-            case 'feature':
-                features.push(formattedItem);
-                break;
-            case 'fix':
-                fixes.push(formattedItem);
-                break;
-            case 'improvement':
-                improvements.push(formattedItem);
-                break;
-            case 'docs':
-                docs.push(formattedItem);
-                break;
-            default:
-                others.push(formattedItem);
-                break;
-        }
-    });
-
-    // Build markdown exactly matching the client component format
-    let markdown = '';
+    let markdown = "";
 
     if (features.length > 0) {
         markdown += `### 🚀 Features\n\n${features.join('\n')}\n\n`;

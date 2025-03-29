@@ -134,8 +134,8 @@ class EmailClientImpl implements EmailClient {
          * @param {string} resetLink - The password reset link
          * @returns {EmailTemplate} The generated email template
          */
-        passwordReset: (resetLink: string): EmailTemplate => {
-            const props: EmailTemplateProps['passwordReset'] = { resetLink };
+        passwordReset: (resetLink: string, expiresInMinutes: number): EmailTemplate => {
+            const props: EmailTemplateProps['passwordReset'] = { resetLink, expiresInMinutes };
             const text = `Hello,\n\nYou requested to reset your password. Please click the following link to reset it: ${resetLink}\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe OctoHub Team`;
 
             return {
@@ -186,14 +186,15 @@ class EmailClientImpl implements EmailClient {
          * @param {string} params.timestamp - The timestamp of the failed login
          * @returns {EmailTemplate} The generated email template
          */
-        loginFailed: (params: EmailTemplateProps['loginFailed']): EmailTemplate => {
-            const { name, ipAddress, userAgent, timestamp } = params;
-            const text = `Hello ${name},\n\nWe detected a failed login attempt for your account.\n\nIP Address: ${ipAddress}\nDevice: ${userAgent}\nTime: ${new Date(timestamp).toLocaleString()}\n\nIf this wasn't you, please change your password immediately.\n\nBest regards,\nThe OctoHub Team`;
+        loginFailed: (params: { email: string; attempts: number; maxAttempts: number; cooldownMinutes: number; }): EmailTemplate => {
+            const { email, attempts, maxAttempts, cooldownMinutes } = params;
+            const props: EmailTemplateProps['loginFailed'] = { email, attempts, maxAttempts, cooldownMinutes };
+            const text = `Hello,\n\nWe detected ${attempts} failed login attempts for your account (${email}). After ${maxAttempts} failed attempts, a ${cooldownMinutes} minute cooldown will be applied.\n\nIf this wasn't you, please change your password immediately.\n\nBest regards,\nThe OctoHub Team`;
 
             return {
                 subject: 'Security Alert: Failed Login Attempt',
                 text,
-                html: renderEmailToHtml('loginFailed', params)
+                html: renderEmailToHtml('loginFailed', props)
             };
         },
 

@@ -24,11 +24,11 @@ export interface User extends BaseUser {
     followingFormatted: string;
     reposFormatted: string;
   };
-  topRepositories?: Array<{
+  topRepositories?: {
     id: number;
     name: string;
     stars: number;
-  }>;
+  }[];
 }
 
 export interface Developer extends BaseUser {
@@ -58,6 +58,36 @@ export interface GitHubUser extends BaseUser {
   site_admin: boolean;
   score: number;
   user_view_type?: string;
+  contributedRepos: string[];
+  authoredIssues: string[];
+  issueAssignments: string[];
+  issueComments: string[];
+  milestones: string[];
+  orgMemberships: string[];
+  ownedOrgs: string[];
+  packages: string[];
+  pullRequests: string[];
+  prAssignments: string[];
+  prComments: string[];
+  prReviews: string[];
+  prReviewComments: string[];
+  prReviewers: string[];
+  reactions: string[];
+  authoredReleases: string[];
+  linkedRepos: string[];
+  repositories: string[];
+  repoViews: string[];
+  searchClicks: string[];
+  searches: string[];
+  sessions: string[];
+  stars: string[];
+  authoredTags: string[];
+  teamMemberships: string[];
+  trending: string[];
+  activities: string[];
+  presence: string[];
+  wikiPages: string[];
+  wikiRevisions: string[];
 }
 
 export interface UserArray {

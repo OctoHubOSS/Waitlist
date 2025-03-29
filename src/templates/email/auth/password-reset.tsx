@@ -1,47 +1,52 @@
 import {
+    Button,
     Heading,
     Section,
     Text,
-    Button,
 } from "@react-email/components";
 import EmailLayout from "../../../components/EmailLayout";
 
 interface PasswordResetEmailProps {
     resetLink: string;
+    expiresInMinutes: number;
 }
 
-export default function PasswordResetEmail({ resetLink }: PasswordResetEmailProps) {
+export default function PasswordResetEmail({ resetLink, expiresInMinutes }: PasswordResetEmailProps) {
     return (
-        <EmailLayout preview="Reset Your OctoHub Password">
-            <Heading className="text-2xl font-bold text-gray-900 mb-6">
+        <EmailLayout preview="Reset Your Password">
+            <Heading className="mb-6 text-2xl font-bold text-gray-900">
                 Password Reset Request
             </Heading>
 
             <Section className="mb-6">
-                <Text className="text-gray-700 mb-4">
+                <Text className="mb-4 text-gray-700">
                     Hello,
                 </Text>
 
-                <Text className="text-gray-700 mb-4">
-                    We received a request to reset your OctoHub password. Click the button below to reset your password:
+                <Text className="mb-4 text-gray-700">
+                    We received a request to reset your password. Click the button below to create a new password:
                 </Text>
 
-                <Button 
-                    className="bg-blue-600 text-white px-4 py-2 rounded"
-                    href={resetLink}>
-                    Reset Your Password
+                <Button
+                    className="mb-4 rounded-md bg-blue-600 px-6 py-3 text-center text-white"
+                    href={resetLink}
+                >
+                    Reset Password
                 </Button>
 
-                <Text className="text-gray-700 mt-4">
-                    If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.
+                <Text className="mb-4 text-gray-700">
+                    If you cannot click the button above, copy and paste this URL into your browser:
+                    {resetLink}
                 </Text>
 
-                <Text className="text-gray-600 text-sm mt-4">
-                    This link will expire in 24 hours.
+                <Text className="mb-4 text-gray-700">
+                    This link will expire in {expiresInMinutes} minutes. If you did not request a password reset,
+                    please ignore this email.
                 </Text>
 
-                <Text className="text-gray-700 mt-6">
-                    Best regards,<br />
+                <Text className="mt-6 text-gray-700">
+                    Best regards,
+                    <br />
                     The OctoHub Team
                 </Text>
             </Section>

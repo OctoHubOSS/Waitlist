@@ -18,67 +18,30 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState<DocCategory[]>([]);
-  const [rootCategories, setRootCategories] = useState<DocCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [baseCategory, setBaseCategory] = useState<DocCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     async function fetchCategories() {
       try {
-        // Fetch all categories for the sidebar
-        const categoriesResponse = await fetch("/api/docs/categories");
-        const categoriesData = await categoriesResponse.json();
-        setCategories(categoriesData);
+        const response = await fetch('/api/docs/categories');
+        const data = await response.json();
+        setCategories(data);
 
-        // Fetch root categories for the dropdown
-        const rootCategoriesResponse = await fetch("/api/docs/root-categories");
-        const rootCategoriesData = await rootCategoriesResponse.json();
-        setRootCategories(rootCategoriesData);
+        // Find the base category (Getting Started)
+        const base = data.find((c: DocCategory) => c.isRootCategory);
+        setBaseCategory(base);
 
-        // Set initially expanded sections based on defaultOpen in meta
-        const defaultOpenSections = categoriesData
-          .filter((category: any) => category.defaultOpen)
-          .map((category: any) => category.title);
-        setExpandedSections(defaultOpenSections);
-
-        // Find base category for root docs
-        const baseDoc = categoriesData.find((cat: DocCategory) =>
-          !cat.title.includes('/') && !cat.isRootCategory);
-
-        if (baseDoc) {
-          setBaseCategory(baseDoc);
-        }
-
-        // If we're at the root /docs path, automatically select the base category
-        if (pathname === '/docs') {
-          setSelectedCategory(baseDoc?.title || null);
-        }
-
-        // Find currently active category based on pathname
-        if (pathname) {
-          const segments = pathname.split('/');
-          if (segments.length > 2) {
-            const categoryPath = segments[2]; // Gets the category from /docs/[category]
-            const foundCategory = categoriesData.find((cat: DocCategory) =>
-              cat.pages.some(page => page.slug.startsWith(categoryPath + '/'))
-            );
-
-            if (foundCategory) {
-              setSelectedCategory(foundCategory.title);
-
-              // Make sure the section is expanded
-              if (!defaultOpenSections.includes(foundCategory.title)) {
-                setExpandedSections(prev => [...prev, foundCategory.title]);
-              }
-            }
-          }
+        // Set selected category based on path
+        const pathParts = pathname.split('/').filter(Boolean);
+        if (pathParts.length > 1) {
+          setSelectedCategory(pathParts[1]);
         }
       } catch (error) {
-        console.error("Failed to fetch categories:", error);
+        console.error('Failed to fetch categories:', error);
       } finally {
         setIsLoading(false);
       }
@@ -120,7 +83,7 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
   }
 
   // Find current root category
-  const currentRootCategory = rootCategories.find(cat =>
+  const currentRootCategory = categories.find(cat =>
     selectedCategory === cat.title || pathname.includes(`/docs/${cat.title.toLowerCase().replace(/\s+/g, '-')}`)
   );
 
@@ -144,11 +107,11 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
         </button>
 
         <CategoryDropdown
-          rootCategories={rootCategories}
+          rootCategories={categories}
           currentRootCategory={currentRootCategory}
           onSelectCategory={setSelectedCategory}
-          isOpen={dropdownOpen}
-          setIsOpen={setDropdownOpen}
+          isOpen={false}
+          setIsOpen={() => { }}
           isMobile={true}
         />
 
@@ -169,11 +132,11 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
         <div className="p-6">
           <div className="flex items-center justify-between mb-5">
             <CategoryDropdown
-              rootCategories={rootCategories}
+              rootCategories={categories}
               currentRootCategory={currentRootCategory}
               onSelectCategory={setSelectedCategory}
-              isOpen={dropdownOpen}
-              setIsOpen={setDropdownOpen}
+              isOpen={false}
+              setIsOpen={() => { }}
             />
 
             <button

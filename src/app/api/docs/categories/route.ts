@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getDocCategories } from '@/utils/documentation/markdown';
+import { getAllCategories } from '@/utils/documentation/markdown';
 
 export async function GET() {
     try {
-        const categories = await getDocCategories();
+        const categories = await getAllCategories();
         // Move root category (Getting Started) to the top if not already
-        const rootCategoryIndex = categories.findIndex(c => !c.title.includes('/'));
+        const rootCategoryIndex = categories.findIndex(c => c.isRootCategory);
         if (rootCategoryIndex > 0) {
             const rootCategory = categories.splice(rootCategoryIndex, 1)[0];
             categories.unshift(rootCategory);

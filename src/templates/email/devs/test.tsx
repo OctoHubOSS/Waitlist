@@ -1,3 +1,4 @@
+import React from 'react';
 import {
     Heading,
     Section,
@@ -41,7 +42,7 @@ export default function TestEmail({ timestamp }: TestEmailProps) {
                 </Section>
 
                 <Text className="text-github-text mt-4">
-                    If you're receiving this, it means your email delivery system is configured correctly.
+                    If you&apos;re receiving this, it means your email delivery system is configured correctly.
                 </Text>
             </Section>
         </DarkEmailLayout>

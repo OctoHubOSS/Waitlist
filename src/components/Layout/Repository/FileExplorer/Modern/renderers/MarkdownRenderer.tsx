@@ -1,41 +1,38 @@
+import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import rehypeSlug from 'rehype-slug';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useModernFileExplorer } from '../hooks/useModernFileExplorer';
 import 'github-markdown-css/github-markdown-dark.css';
 
-interface ModernMarkdownRendererProps {
-    content: string;
-}
-
-export default function ModernMarkdownRenderer({ content }: ModernMarkdownRendererProps) {
-    const { syntaxTheme = 'atomOneDark' } = useModernFileExplorer();
-
+const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
     return (
         <div className="p-6 bg-github-dark markdown-body">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw, rehypeSanitize, rehypeSlug]}
                 components={{
-                    code({ node, className, children, ...props }) {
-                        const match = /language-(\w+)/.exec(className || '');
-                        return match ? (
-                            <SyntaxHighlighter
-                                language={match[1]}
-                                style={vscDarkPlus}
-                                PreTag="div"
-                                showLineNumbers
-                                {...props}
-                            >
-                                {String(children).replace(/\n$/, '')}
-                            </SyntaxHighlighter>
-                        ) : (
-                            <code className={className} {...props}>
-                                {children}
+                    code: (props) => {
+                        const match = /language-(\w+)/.exec(props.className || '');
+                        if (match) {
+                            return (
+                                <SyntaxHighlighter
+                                    language={match[1]}
+                                    style={vscDarkPlus as any}
+                                    PreTag="div"
+                                    showLineNumbers
+                                >
+                                    {String(props.children).replace(/\n$/, '')}
+                                </SyntaxHighlighter>
+                            );
+                        }
+                        return (
+                            <code className="bg-gray-800 rounded px-1 py-0.5 text-sm">
+                                {props.children}
                             </code>
                         );
                     },
@@ -57,4 +54,6 @@ export default function ModernMarkdownRenderer({ content }: ModernMarkdownRender
             </ReactMarkdown>
         </div>
     );
-}
+};
+
+export default MarkdownRenderer;

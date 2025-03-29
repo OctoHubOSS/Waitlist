@@ -9,7 +9,10 @@ import { getToken } from '@/lib/auth/token';
  * Create a middleware function for rate limiting
  */
 export function createRateLimitMiddleware(prisma: PrismaClient, options: RateLimitOptions) {
-    const rateLimiter = new RateLimitClient(prisma, options);
+    const rateLimiter = new RateLimitClient({
+        defaultRule: options.defaultRule,
+        rules: options.rules
+    });
 
     return async function rateLimitMiddleware(req: NextRequest) {
         const headersList = await headers();

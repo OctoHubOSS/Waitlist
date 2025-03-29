@@ -165,3 +165,19 @@ export function generateComingSoonMetadata(): Metadata {
     canonicalUrl: "/coming-soon",
   });
 }
+
+/**
+ * Generate documentation-specific metadata
+ */
+export function generateDocsMetadata(slug: string[]): Metadata {
+  const title = slug.length > 0
+    ? slug[slug.length - 1].split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    : 'Documentation';
+
+  return generateMetadata({
+    title,
+    description: `Documentation for ${title} - Learn how to use OctoHub's features and APIs.`,
+    keywords: ['documentation', 'docs', 'guide', 'tutorial', ...slug],
+    canonicalUrl: `/docs/${slug.join('/')}`,
+  });
+}

@@ -1,61 +1,57 @@
-import { Heading, Section, Text } from "@react-email/components";
+import { Button, Heading, Section, Text } from "@react-email/components";
+
 import EmailLayout from "../../../components/EmailLayout";
 
 interface LoginFailedEmailProps {
-    name: string;
-    ipAddress: string;
-    userAgent: string;
-    timestamp: string;
+    email: string;
+    attempts: number;
+    maxAttempts: number;
+    cooldownMinutes: number;
 }
 
 export default function LoginFailedEmail({
-    name,
-    ipAddress,
-    userAgent,
-    timestamp,
+    email,
+    attempts,
+    maxAttempts,
+    cooldownMinutes,
 }: LoginFailedEmailProps) {
     return (
-        <EmailLayout 
-            preview="Failed Login Attempt Detected" 
-            footerText="This is an automated message, please do not reply to this email.">
-            <Heading className="text-2xl font-bold text-gray-900 mb-6">
-                Failed Login Attempt Detected
-            </Heading>
+        <EmailLayout preview="Failed Login Attempt Alert">
+            <Heading className="mb-6 text-2xl font-bold text-gray-900">Failed Login Attempt</Heading>
 
             <Section className="mb-6">
-                <Text className="text-gray-700 mb-4">
-                    Hello {name},
+                <Text className="mb-4 text-gray-700">Hello,</Text>
+
+                <Text className="mb-4 text-gray-700">
+                    We detected {attempts} failed login {attempts === 1 ? "attempt" : "attempts"} for your account
+                    ({email}).
                 </Text>
 
-                <Text className="text-gray-700 mb-4">
-                    We detected a failed login attempt for your account. Here are the details:
+                <Text className="mb-4 text-gray-700">
+                    For security reasons, after {maxAttempts} failed attempts, your account will be temporarily
+                    locked for {cooldownMinutes} minutes.
                 </Text>
 
-                <Section className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <Text className="text-gray-600 mb-2">
-                        <strong>IP Address:</strong> {ipAddress}
-                    </Text>
-                    <Text className="text-gray-600 mb-2">
-                        <strong>Device:</strong> {userAgent}
-                    </Text>
-                    <Text className="text-gray-600">
-                        <strong>Time:</strong> {new Date(timestamp).toLocaleString()}
-                    </Text>
-                </Section>
-
-                <Text className="text-gray-700 mb-4">
-                    If this was you, you can ignore this email. If you didn't attempt to log in, we recommend:
+                <Text className="mb-4 text-gray-700">
+                    If you did not attempt to log in, we recommend resetting your password immediately:
                 </Text>
 
-                <ul className="list-disc pl-6 text-gray-700 mb-4">
-                    <li>Changing your password immediately</li>
-                    <li>Enabling two-factor authentication if not already enabled</li>
-                    <li>Checking your account for any unauthorized activity</li>
-                    <li>Contacting our support team if you have concerns</li>
-                </ul>
+                <Button
+                    className="mb-4 rounded-md bg-blue-600 px-6 py-3 text-center text-white"
+                    href="https://octohub.app/auth/reset-password"
+                >
+                    Reset Password
+                </Button>
 
-                <Text className="text-gray-700">
-                    Stay safe!
+                <Text className="mb-4 text-gray-700">
+                    If you cannot click the button above, copy and paste this URL into your browser:
+                    https://octohub.app/auth/reset-password
+                </Text>
+
+                <Text className="mt-6 text-gray-700">
+                    Best regards,
+                    <br />
+                    The OctoHub Team
                 </Text>
             </Section>
         </EmailLayout>

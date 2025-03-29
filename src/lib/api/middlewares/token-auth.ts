@@ -25,6 +25,25 @@ export interface TokenAuthOptions {
 }
 
 /**
+ * Get client IP from request headers
+ */
+function getClientIp(req: NextRequest): string | null {
+    // Try to get IP from various headers
+    const forwardedFor = req.headers.get('x-forwarded-for');
+    if (forwardedFor) {
+        // Get the first IP in the list (client's original IP)
+        return forwardedFor.split(',')[0].trim();
+    }
+
+    const realIp = req.headers.get('x-real-ip');
+    if (realIp) {
+        return realIp;
+    }
+
+    return null;
+}
+
+/**
  * Middleware for token-based authentication
  */
 export function withTokenAuth(options: TokenAuthOptions = {}): ApiMiddleware {
@@ -48,18 +67,18 @@ export function withTokenAuth(options: TokenAuthOptions = {}): ApiMiddleware {
         // Check required scopes if any are specified
         if (requiredScopes.length > 0) {
             const hasPermission = tokenService.checkAllScopes(result.token, requiredScopes);
-            
+
             // If main scopes check fails, try alternative scope sets if provided
             if (!hasPermission && altScopes.length > 0) {
                 let hasAltPermission = false;
-                
+
                 for (const altScopeSet of altScopes) {
                     if (tokenService.checkAllScopes(result.token, altScopeSet)) {
                         hasAltPermission = true;
                         break;
                     }
                 }
-                
+
                 if (!hasAltPermission) {
                     return errors.forbidden('Insufficient permissions for this operation');
                 }
@@ -75,7 +94,7 @@ export function withTokenAuth(options: TokenAuthOptions = {}): ApiMiddleware {
                 req.nextUrl.pathname,
                 req.method,
                 200,
-                req.headers.get('x-forwarded-for') || req.ip,
+                getClientIp(req),
                 req.headers.get('user-agent')
             );
         } catch (error) {
@@ -104,7 +123,7 @@ export function withTokenAuth(options: TokenAuthOptions = {}): ApiMiddleware {
                     req.nextUrl.pathname,
                     req.method,
                     response.status,
-                    req.headers.get('x-forwarded-for') || req.ip,
+                    getClientIp(req),
                     req.headers.get('user-agent')
                 );
             }

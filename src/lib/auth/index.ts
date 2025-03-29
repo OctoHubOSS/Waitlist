@@ -1,10 +1,13 @@
-// Export existing auth functions
-export * from './token';
-export * from './token-service';
-export * from './token-constants';
-export * from './token-permissions';
-// Remove the reference to tokenCache since we're using the existing cache system
-// export { tokenCache } from './token-cache';
+import { getServerSession } from "next-auth";
+import { tokenService } from "./token-service";
+import { authOptions } from "../auth";
 
-// Re-export auth options and core functions
-export { authOptions, getSession, isAuthenticated, hashPassword, verifyPassword } from '@/lib/auth';
+export { tokenService } from "./token-service";
+export * from "./token-constants";
+export * from "./token-permissions";
+export * from "./token-validator";
+export * from "../auth";
+
+export async function getSession() {
+    return getServerSession(authOptions);
+}

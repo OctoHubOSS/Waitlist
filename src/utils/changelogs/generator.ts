@@ -1,145 +1,123 @@
-import { ChangelogEntry, TagObject, ProcessedCommit } from '@/types/api';
-import { generateFormattedBody, processCommits } from './commits';
-import { fetchCommitsForRelease, fetchCommitsForTag, getTagUrl } from './fetch';
+import type { ChangelogEntry, TagObject, ProcessedCommits } from "@/types/api";
+import { generateFormattedBody, processCommits } from "./commits";
+import { fetchCommitsForRelease, fetchCommitsForTag, getTagUrl } from "./fetch";
+import type { Octokit } from "octokit";
 
-/**
- * Generate changelog from release information
- */
-export async function generateChangelogFromRelease(
-    octokit: any,
-    owner: string,
-    repo: string,
-    release: any,
-    previousRelease: any | null,
-    isLatest: boolean
-): Promise<ChangelogEntry> {
-    // Base changelog object
-    const changelog: ChangelogEntry = {
-        version: release.tag_name,
-        name: release.name || release.tag_name,
-        isLatest,
-        publishedAt: release.published_at,
-        url: release.html_url,
-        description: release.body || "",
-        prerelease: release.prerelease || false,
-        draft: release.draft || false,
-        commits: [] as ProcessedCommit[], // Explicitly type the array
-        summary: {
-            features: 0,
-            fixes: 0,
-            improvements: 0,
-            docs: 0,
-            others: 0,
-            totalCommits: 0
-        },
-        formattedBody: ""
-    };
-
-    try {
-        // Always fetch commits, even if the release has a body
-        // This ensures we have commit data for display
-        const commits = await fetchCommitsForRelease(octokit, owner, repo, release, previousRelease);
-
-        // Process the commits
-        const processedCommits = processCommits(commits);
-        changelog.commits = processedCommits.commits;
-        changelog.summary = processedCommits.summary;
-
-        // Generate formatted body from commits
-        const generatedBody = generateFormattedBody(processedCommits);
-
-        // If the release has a body, use it as formattedBody but also keep generated commit history
-        if (release.body && release.body.trim() !== "") {
-            changelog.formattedBody = release.body;
-            changelog.description = generatedBody;
-        } else {
-            // Otherwise use the generated body
-            changelog.formattedBody = generatedBody;
-            changelog.description = generatedBody;
-        }
-
-        return changelog;
-    } catch (error: any) {
-        console.error(`Error generating changelog for release ${release.tag_name}:`, error);
-        return {
-            ...changelog,
-            error: `Could not fetch complete commit history: ${error.message}`
-        };
-    }
+interface TagInfo {
+  tag_name: string;
+  name?: string;
+  target_commitish: string;
+  published_at: string;
+  html_url: string;
+  body: string;
+  prerelease: boolean;
+  draft: boolean;
 }
 
-/**
- * Generate changelog from tag information
- */
-export async function generateChangelogFromTag(
-    octokit: any,
-    owner: string,
-    repo: string,
-    tag: TagObject,
-    previousTag: TagObject | null,
-    isLatest: boolean
+export async function generateChangelogEntry(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  release: TagInfo,
+  previousRelease: TagInfo | null,
+  isLatest: boolean
 ): Promise<ChangelogEntry> {
-    // Base changelog object with properly typed commits array
-    const changelog: ChangelogEntry = {
-        version: tag.name,
-        name: tag.name,
-        isLatest,
-        publishedAt: null,
-        url: getTagUrl(owner, repo, tag.name),
-        description: "",
-        prerelease: false,
-        draft: false,
-        commits: [] as ProcessedCommit[], // Explicitly type the array
-        summary: {
-            features: 0,
-            fixes: 0,
-            improvements: 0,
-            docs: 0,
-            others: 0,
-            totalCommits: 0
-        },
-        formattedBody: ""
+  const version = release.tag_name;
+  const name = release.name || release.tag_name;
+  const publishedAt = release.published_at;
+  const url = release.html_url;
+  const description = release.body || "";
+  const prerelease = release.prerelease;
+  const draft = release.draft;
+  let formattedBody = "";
+
+  try {
+    const fetchedCommits = await fetchCommitsForRelease(
+      octokit,
+      owner,
+      repo,
+      release,
+      previousRelease
+    );
+    // Use type assertion to make TypeScript happy - the actual structure is what processCommits expects
+    const processedCommits = await processCommits(
+      octokit,
+      fetchedCommits as any
+    );
+    formattedBody = generateFormattedBody(processedCommits);
+  } catch (error: any) {
+    console.error(
+      `Failed to generate changelog for ${release.tag_name}:`,
+      error
+    );
+    // Create a valid ChangelogEntry without the error property
+    return {
+      sha: "",
+      shortSha: "",
+      message: `Error: Could not fetch complete commit history: ${error instanceof Error ? error.message : "Unknown error"}`,
+      authorName: "",
+      authorUrl: null,
+      url: "",
+      type: "other",
     };
+  }
 
-    try {
-        // Try to get tag date (publishedAt)
-        try {
-            const { data: tagData } = await octokit.rest.git.getTag({
-                owner, repo, tag_sha: tag.commit.sha
-            });
-            changelog.publishedAt = tagData.tagger ? tagData.tagger.date : null;
-        } catch (err) {
-            console.error(`Could not fetch tag data for ${tag.name}:`, err);
-            // Try to get commit date instead
-            try {
-                const { data: commitData } = await octokit.rest.git.getCommit({
-                    owner, repo, commit_sha: tag.commit.sha
-                });
-                changelog.publishedAt = commitData.author?.date || null;
-            } catch (commitErr) {
-                console.error(`Could not fetch commit date for ${tag.name}:`, commitErr);
-            }
-        }
+  return {
+    sha: "",
+    shortSha: "",
+    message: "",
+    authorName: "",
+    authorUrl: null,
+    url: "",
+    type: "other",
+  };
+}
 
-        // Fetch commits for this tag
-        const commits = await fetchCommitsForTag(octokit, owner, repo, tag, previousTag);
+export async function generateTagChangelogEntry(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  tag: TagObject,
+  isLatest: boolean
+): Promise<ChangelogEntry> {
+  const version = tag.name;
+  const name = tag.name;
+  const publishedAt = null;
+  const url = getTagUrl(owner, repo, tag.name);
+  const description = "";
+  const prerelease = false;
+  const draft = false;
+  let formattedBody = "";
 
-        // Process the commits
-        const processedCommits = processCommits(commits);
-        changelog.commits = processedCommits.commits;
-        changelog.summary = processedCommits.summary;
+  try {
+    const fetchedCommits = await fetchCommitsForTag(octokit, owner, repo, tag);
+    // Use type assertion to make TypeScript happy - the actual structure is what processCommits expects
+    const processedCommits = await processCommits(
+      octokit,
+      fetchedCommits as any
+    );
+    formattedBody = generateFormattedBody(processedCommits);
+  } catch (error) {
+    console.error(`Error fetching commits for tag ${version}:`, error);
+    // Create a valid ChangelogEntry without the error property
+    return {
+      sha: "",
+      shortSha: "",
+      message: `Error: Could not fetch complete commit history: ${error instanceof Error ? error.message : "Unknown error"}`,
+      authorName: "",
+      authorUrl: null,
+      url: "",
+      type: "other",
+    };
+  }
 
-        // Generate formatted body from commits
-        const generatedBody = generateFormattedBody(processedCommits);
-        changelog.formattedBody = generatedBody;
-        changelog.description = generatedBody;
-
-        return changelog;
-    } catch (error: any) {
-        console.error(`Error generating changelog for tag ${tag.name}:`, error);
-        return {
-            ...changelog,
-            error: `Could not fetch complete commit history: ${error.message}`
-        };
-    }
+  return {
+    sha: "",
+    shortSha: "",
+    message: "",
+    authorName: "",
+    authorUrl: null,
+    url: "",
+    type: "other",
+  };
 }

@@ -1,5 +1,6 @@
-"use client";
+'use client';
 
+import React, { Suspense } from 'react';
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -10,7 +11,8 @@ import { HiExclamationCircle } from "react-icons/hi";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function SignIn() {
+// Create a client component that uses useSearchParams
+function SignInForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const error = searchParams.get("error");
@@ -361,5 +363,21 @@ export default function SignIn() {
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-github-dark to-transparent opacity-50 pointer-events-none"></div>
       <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-b from-github-dark to-transparent opacity-50 pointer-events-none"></div>
     </div>
+  );
+}
+
+// Create a loading fallback
+function SignInLoading() {
+  return <div className="flex justify-center items-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-github-accent"></div>
+  </div>;
+}
+
+// Export the page component with Suspense
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<SignInLoading />}>
+      <SignInForm />
+    </Suspense>
   );
 }

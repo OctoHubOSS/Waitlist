@@ -64,8 +64,8 @@ export default function FileViewer() {
         ) : fileContent ? (
           isImage(selectedFile.name) ? (
             <ImageRenderer
-              url={selectedFile.download_url as string}
-              name={selectedFile.name}
+              src={selectedFile.download_url as string}
+              alt={selectedFile.name}
             />
           ) : isMarkdown(selectedFile.name) ? (
             <MarkdownRenderer content={fileContent} />

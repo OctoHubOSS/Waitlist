@@ -26,23 +26,22 @@ export interface ProcessedCommit {
 }
 
 export interface ProcessedCommits {
-    commits: ProcessedCommit[];
-    summary: CommitSummary;
+    features: ChangelogEntry[];
+    fixes: ChangelogEntry[];
+    improvements: ChangelogEntry[];
+    docs: ChangelogEntry[];
+    others: ChangelogEntry[];
+    totalCommits: number;
 }
 
 export interface ChangelogEntry {
-    version: string;
-    name: string;
-    isLatest: boolean;
-    publishedAt: string | null;
+    sha: string;
+    shortSha: string;
+    message: string;
+    authorName: string;
+    authorUrl: string | null;
     url: string;
-    description: string;
-    prerelease: boolean;
-    draft: boolean;
-    commits: ProcessedCommit[];
-    summary: CommitSummary;
-    formattedBody: string;
-    error?: string;
+    type: "feature" | "fix" | "improvement" | "docs" | "other";
 }
 
 export interface TagObject {

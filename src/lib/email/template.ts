@@ -16,6 +16,7 @@ export type EmailTemplateProps = {
   };
   passwordReset: {
     resetLink: string;
+    expiresInMinutes: number;
   };
   githubLinked: {
     username: string;
@@ -23,12 +24,7 @@ export type EmailTemplateProps = {
   test: {
     timestamp: string;
   };
-  loginFailed: {
-    name: string;
-    ipAddress: string;
-    userAgent: string;
-    timestamp: string;
-  };
+  loginFailed: LoginFailedEmailProps; // Updated to use LoginFailedEmailProps
   waitlistConfirmation: {
     email: string;
   };
@@ -36,6 +32,13 @@ export type EmailTemplateProps = {
     email: string;
   };
 };
+
+interface LoginFailedEmailProps {
+  email: string;
+  attempts: number;
+  maxAttempts: number;
+  cooldownMinutes: number;
+}
 
 /**
  * A mapping of template names to their corresponding React components

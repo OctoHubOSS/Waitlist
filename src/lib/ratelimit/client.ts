@@ -30,10 +30,10 @@ export class RateLimitClient {
      */
     async check(context: RateLimitContext): Promise<RateLimitResult> {
         const now = Math.floor(Date.now() / 1000); // Current time in seconds
-        
+
         // Ensure we have a rule - use default rule if matching fails
         const rule = this.findMatchingRule(context) || this.defaultRule;
-        
+
         // Safety check - if somehow we still don't have a rule, use safe defaults
         if (!rule) {
             console.error("No rate limit rule found and no default rule available");
@@ -47,24 +47,24 @@ export class RateLimitClient {
                 }
             };
         }
-        
+
         // Determine appropriate limits based on token presence
         const limit = context.token && rule.tokenLimit ? rule.tokenLimit : rule.limit;
         const window = context.token && rule.tokenWindow ? rule.tokenWindow : rule.window;
-        
+
         // Find or create rate limit record
         const rateLimit = await prisma.rateLimit.findUnique({
             where: {
                 identifier_endpoint_method: {
                     identifier: context.identifier,
-                    endpoint: context.endpoint || null,
-                    method: context.method || null
+                    endpoint: context.endpoint || undefined as any,
+                    method: context.method || undefined as any
                 }
             }
         }) || {
             identifier: context.identifier,
-            endpoint: context.endpoint || null,
-            method: context.method || null,
+            endpoint: context.endpoint || undefined,
+            method: context.method || undefined,
             count: 0,
             resetAt: new Date(now * 1000 + window * 1000),
             blockedUntil: null,
@@ -75,7 +75,7 @@ export class RateLimitClient {
         // Check if currently blocked
         if (rateLimit.blockedUntil && rateLimit.blockedUntil > new Date()) {
             const retryAfter = Math.ceil((rateLimit.blockedUntil.getTime() - Date.now()) / 1000);
-            
+
             return {
                 success: false,
                 info: {
@@ -92,11 +92,11 @@ export class RateLimitClient {
         const resetCount = rateLimit.resetAt <= new Date();
         const newCount = resetCount ? 1 : rateLimit.count + 1;
         const newResetAt = resetCount ? new Date(now * 1000 + window * 1000) : rateLimit.resetAt;
-        
+
         // Check if this request exceeds the limit
         const exceeded = newCount > limit;
         let blockedUntil: Date | null = null;
-        
+
         if (exceeded && rule.blockFor) {
             blockedUntil = new Date(now * 1000 + rule.blockFor * 1000);
         }
@@ -106,8 +106,8 @@ export class RateLimitClient {
             where: {
                 identifier_endpoint_method: {
                     identifier: context.identifier,
-                    endpoint: context.endpoint || null,
-                    method: context.method || null
+                    endpoint: context.endpoint || undefined as any,
+                    method: context.method || undefined as any
                 }
             },
             update: {
@@ -118,8 +118,8 @@ export class RateLimitClient {
             },
             create: {
                 identifier: context.identifier,
-                endpoint: context.endpoint || null,
-                method: context.method || null,
+                endpoint: context.endpoint || undefined,
+                method: context.method || undefined,
                 count: newCount,
                 resetAt: newResetAt,
                 blockedUntil,

@@ -64,15 +64,11 @@ export interface EmailClient {
     sendEmail(options: SendEmailOptions): Promise<SendEmailResult>;
     emailTemplates: {
         welcome: (name: string) => EmailTemplate;
-        passwordReset: (resetLink: string) => EmailTemplate;
+        passwordReset: (resetLink: string, expiresInMinutes: number) => EmailTemplate;
         githubLinked: (username: string) => EmailTemplate;
         test: () => EmailTemplate;
-        loginFailed: (params: {
-            name: string;
-            ipAddress: string;
-            userAgent: string;
-            timestamp: string;
-        }) => EmailTemplate;
+        loginFailed: (params: { email: string; attempts: number; maxAttempts: number; cooldownMinutes: number; }) => EmailTemplate;
         waitlistConfirmation: (email: string) => EmailTemplate;
+        waitlistUnsubscribe: (email: string) => EmailTemplate;
     };
 }
