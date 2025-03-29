@@ -111,6 +111,7 @@ function CountdownTimer({ targetDate }: { targetDate: Date }) {
 
 export default function ComingSoonPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [imgError, setImgError] = useState(false);
 
   return (
     <div className="container mx-auto">
@@ -149,13 +150,20 @@ export default function ComingSoonPage() {
               transition={{ duration: 0.8 }}
             >
               <div className="absolute inset-0 bg-github-dark-secondary opacity-50" />
-              <Image
-                src="/logo.webp"
-                alt="OctoHub"
-                width={96}
-                height={96}
-                className="relative z-10"
-              />
+              {imgError ? (
+                <div className="relative z-10 text-github-accent font-bold text-3xl">OH</div>
+              ) : (
+                <Image
+                  src="/logo.webp"
+                  alt="OctoHub"
+                  width={96}
+                  height={96}
+                  quality={90}
+                  priority
+                  onError={() => setImgError(true)}
+                  className="relative z-10"
+                />
+              )}
             </motion.div>
 
             <motion.div

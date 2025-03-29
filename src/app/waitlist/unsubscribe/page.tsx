@@ -26,6 +26,7 @@ function UnsubscribeForm() {
   const [isUnsubscribed, setIsUnsubscribed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState(email);
+  const [imgError, setImgError] = useState(false);
 
   const handleUnsubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,13 +67,22 @@ function UnsubscribeForm() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <Link href="/" className="inline-block">
-            <Image
-              src="/logo.webp"
-              alt="OctoHub"
-              width={64}
-              height={64}
-              className="mx-auto"
-            />
+            {imgError ? (
+              <div className="mx-auto h-16 w-16 rounded-full bg-github-dark-secondary flex items-center justify-center text-github-accent font-bold text-2xl">
+                OH
+              </div>
+            ) : (
+              <Image
+                src="/logo.webp"
+                alt="OctoHub"
+                width={64}
+                height={64}
+                className="mx-auto"
+                quality={90}
+                priority
+                onError={() => setImgError(true)}
+              />
+            )}
           </Link>
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-white">
             Unsubscribe from Waitlist

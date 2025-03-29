@@ -12,6 +12,7 @@ export default function SubscribePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAlreadySubscribed, setIsAlreadySubscribed] = useState(false);
     const [showUnsubscribePrompt, setShowUnsubscribePrompt] = useState(false);
+    const [imgError, setImgError] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -95,14 +96,20 @@ export default function SubscribePage() {
                 {/* Header */}
                 <div className="text-center space-y-6">
                     <div className="relative mx-auto h-24 w-24 rounded-full bg-gradient-to-r from-github-dark to-github-dark-secondary flex items-center justify-center backdrop-blur-sm border border-github-border overflow-hidden">
-                        <Image
-                            src="/logo.webp"
-                            alt="OctoHub"
-                            width={64}
-                            height={64}
-                            className="relative z-10"
-                            priority
-                        />
+                        {imgError ? (
+                            <div className="relative z-10 text-github-accent font-bold text-3xl">OH</div>
+                        ) : (
+                            <Image
+                                src="/logo.webp"
+                                alt="OctoHub"
+                                width={64}
+                                height={64}
+                                className="relative z-10"
+                                quality={90}
+                                priority
+                                onError={() => setImgError(true)}
+                            />
+                        )}
                     </div>
                     <h1 className="text-4xl font-bold text-white">
                         {isAlreadySubscribed ? 'Already Subscribed' : 'Join the OctoHub Waitlist'}
@@ -205,4 +212,4 @@ export default function SubscribePage() {
             </motion.div>
         </div>
     );
-} 
+}
