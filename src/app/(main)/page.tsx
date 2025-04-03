@@ -29,10 +29,14 @@ export default function ComingSoonPage() {
           <Countdown />
 
           {/* Features Section */}
-          <Features />
+          <section id="features" className="w-full py-16 bg-github-dark-secondary">
+            <Features />
+          </section>
 
           {/* FAQ Section */}
-          <FAQ />
+          <section id="faq" className="w-full py-16">
+            <FAQ />
+          </section>
 
           {/* Social Links */}
           <SocialLinks />

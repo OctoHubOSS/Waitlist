@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
+import { ApiValidationSchema } from './types';
 
 /**
  * Common validation schemas and utilities for API endpoints
@@ -44,6 +45,78 @@ export const enums = {
 
 // Common validation schemas
 export const schemas = {
+    /**
+     * Email validation schema
+     */
+    email: z.string().email('Invalid email address'),
+
+    /**
+     * Password validation schema
+     */
+    password: z
+        .string()
+        .min(8, 'Password must be at least 8 characters')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number'),
+
+    /**
+     * Name validation schema
+     */
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+
+    /**
+     * Display name validation schema
+     */
+    displayName: z
+        .string()
+        .min(3, 'Display name must be at least 3 characters')
+        .regex(/^[a-zA-Z0-9_-]+$/, 'Display name can only contain letters, numbers, underscores, and hyphens'),
+
+    /**
+     * Waitlist status validation schema
+     */
+    waitlistStatus: z.enum(['SUBSCRIBED', 'UNSUBSCRIBED', 'REGISTERED', 'REJECTED']),
+
+    /**
+     * User status validation schema
+     */
+    userStatus: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED', 'DELETED']),
+
+    /**
+     * User role validation schema
+     */
+    userRole: z.enum(['ADMIN', 'DEVELOPER', 'CONTRIBUTOR', 'MAINTAINER', 'MEMBER', 'READONLY', 'BANNED']),
+
+    /**
+     * ID validation schema
+     */
+    id: z.string().uuid('Invalid ID format'),
+
+    /**
+     * Date validation schema
+     */
+    date: z.string().datetime('Invalid date format'),
+
+    /**
+     * URL validation schema
+     */
+    url: z.string().url('Invalid URL format'),
+
+    /**
+     * Phone number validation schema
+     */
+    phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
+
+    /**
+     * Username validation schema
+     */
+    username: z
+        .string()
+        .min(3, 'Username must be at least 3 characters')
+        .max(20, 'Username must be at most 20 characters')
+        .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens'),
+
     // User schemas
     user: z.object({
         id: z.string().cuid(),
@@ -302,7 +375,8 @@ export const apiSchemas = {
         email: schemas.user.shape.email,
         password: schemas.user.shape.password,
         name: schemas.user.shape.name,
-        image: z.string().url("Invalid image URL").optional(),
+        displayName: z.string().min(3).regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens"),
+        image: z.any().optional(), // Allow any image data since it's handled separately
     }),
 };
 
@@ -320,10 +394,10 @@ export async function validateQuery<T>(req: NextRequest, schema: z.ZodType<T>): 
         for (const [key, value] of req.nextUrl.searchParams.entries()) {
             queryParams[key] = value;
         }
-        
+
         // Validate with zod schema
         const result = schema.safeParse(queryParams);
-        
+
         if (!result.success) {
             return {
                 success: false,
@@ -333,7 +407,7 @@ export async function validateQuery<T>(req: NextRequest, schema: z.ZodType<T>): 
                 }
             };
         }
-        
+
         return {
             success: true,
             data: result.data
@@ -359,10 +433,10 @@ export async function validateQuery<T>(req: NextRequest, schema: z.ZodType<T>): 
 export async function validateBody<T>(req: NextRequest, schema: z.ZodType<T>): Promise<ValidationResult<T>> {
     try {
         const body = await req.json();
-        
+
         // Validate with zod schema
         const result = schema.safeParse(body);
-        
+
         if (!result.success) {
             return {
                 success: false,
@@ -372,7 +446,7 @@ export async function validateBody<T>(req: NextRequest, schema: z.ZodType<T>): P
                 }
             };
         }
-        
+
         return {
             success: true,
             data: result.data
@@ -386,4 +460,177 @@ export async function validateBody<T>(req: NextRequest, schema: z.ZodType<T>): P
             }
         };
     }
+}
+
+/**
+ * Common validation schemas for requests
+ */
+export const requestSchemas = {
+    /**
+     * Waitlist subscription request schema
+     */
+    subscribe: z.object({
+        email: schemas.email,
+        name: schemas.name.optional(),
+        source: z.string().optional(),
+        metadata: z.record(z.any()).optional(),
+    }),
+
+    /**
+     * Waitlist unsubscribe request schema
+     */
+    unsubscribe: z.object({
+        email: schemas.email,
+    }),
+
+    /**
+     * Waitlist check request schema
+     */
+    checkWaitlist: z.object({
+        email: schemas.email,
+    }),
+
+    /**
+     * Registration request schema
+     */
+    register: z.object({
+        email: schemas.email,
+        password: schemas.password,
+        name: schemas.name,
+        displayName: schemas.displayName,
+        image: z.any().optional(), // Allow any image data since it's handled separately
+    }),
+
+    /**
+     * Login request schema
+     */
+    login: z.object({
+        email: schemas.email,
+        password: schemas.password,
+    }),
+
+    /**
+     * Password reset request schema
+     */
+    resetPassword: z.object({
+        email: schemas.email,
+    }),
+
+    /**
+     * Email verification request schema
+     */
+    verifyEmail: z.object({
+        email: schemas.email,
+        code: z.string().length(6, 'Invalid verification code'),
+    }),
+
+    /**
+     * Two-factor authentication setup request schema
+     */
+    setup2FA: z.object({
+        code: z.string().length(6, 'Invalid verification code'),
+    }),
+
+    /**
+     * Two-factor authentication verification request schema
+     */
+    verify2FA: z.object({
+        code: z.string().length(6, 'Invalid verification code'),
+    }),
+
+    /**
+     * Update user request schema
+     */
+    updateUser: z.object({
+        name: schemas.name.optional(),
+        email: schemas.email.optional(),
+        phone: schemas.phone.optional(),
+    }),
+};
+
+// Define the user schema separately to avoid circular reference
+const userSchema = z.object({
+    id: z.string(),
+    name: schemas.name,
+    displayName: schemas.displayName,
+    email: schemas.email,
+    image: z.object({
+        data: z.string(),
+        format: z.string(),
+        width: z.number(),
+        height: z.number(),
+        size: z.number(),
+    }).optional(),
+    role: schemas.userRole,
+    status: schemas.userStatus,
+    emailVerified: z.string().datetime().nullable(),
+    twoFactorEnabled: z.boolean(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+});
+
+/**
+ * Common validation schemas for responses
+ */
+export const responseSchemas = {
+    /**
+     * Waitlist subscriber response schema
+     */
+    subscriber: z.object({
+        id: z.string(),
+        email: schemas.email,
+        name: schemas.name.optional(),
+        status: schemas.waitlistStatus,
+        createdAt: z.string().datetime(),
+        updatedAt: z.string().datetime(),
+    }),
+
+    /**
+     * User response schema
+     */
+    user: userSchema,
+
+    /**
+     * Authentication response schema
+     */
+    auth: z.object({
+        user: userSchema,
+        token: z.string(),
+    }),
+
+    /**
+     * Error response schema
+     */
+    error: z.object({
+        success: z.literal(false),
+        error: z.object({
+            code: z.string(),
+            message: z.string(),
+            details: z.any().optional(),
+        }),
+    }),
+};
+
+/**
+ * Creates a validation schema for a request
+ */
+export function createRequestSchema<T extends z.ZodType>(schema: T): z.ZodType<z.infer<T>> {
+    return schema;
+}
+
+/**
+ * Creates a validation schema for a response
+ */
+export function createResponseSchema<T extends z.ZodType>(schema: T): z.ZodType<z.infer<T>> {
+    return schema;
+}
+
+/**
+ * Creates a combined validation schema for both request and response
+ */
+export function createApiSchema<T extends z.ZodType, R extends z.ZodType>(requestSchema: T, responseSchema: R) {
+    return {
+        request: requestSchema,
+        response: responseSchema,
+    };
 }

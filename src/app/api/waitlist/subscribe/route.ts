@@ -1,101 +1,134 @@
 import { z } from "zod";
-import prisma from "@/lib/database";
 import { NextRequest } from "next/server";
-import { emailClient } from "@/lib/email/client";
 import { successResponse, errors } from "@/lib/api/responses";
-import { validate } from "@/lib/api/validation";
+import { SubscribeRequest, WaitlistResponse } from "@/lib/api/types";
+import { withTimeout, withRetry } from "@/lib/api/utils";
+import { AuditLogger } from "@/lib/audit/logger";
+import { getClientIp } from "@/lib/client/ip";
+import { BaseWaitlistRoute } from "@/lib/api/routes/waitlist/base";
+import { AuditAction, AuditStatus } from "@/types/auditLogs";
 
 // Waitlist subscription request schema validation
 const subscribeRequestSchema = z.object({
     email: z.string().email(),
     name: z.string().optional(),
-    source: z.string().optional(),
-    metadata: z.record(z.any()).optional(),
-});
+}) satisfies z.ZodType<SubscribeRequest>;
 
-export async function POST(req: NextRequest) {
-    try {
-        // Parse and validate the request body
-        const body = await req.json();
-        const validation = validate(subscribeRequestSchema, body);
+class SubscribeRoute extends BaseWaitlistRoute<SubscribeRequest, WaitlistResponse> {
+    constructor() {
+        super(subscribeRequestSchema);
+    }
 
-        if (!validation.success) {
-            return errors.badRequest('Invalid subscription request', validation.error);
+    async handle(request: NextRequest): Promise<Response> {
+        try {
+            // Process the request with timeout and retry for database operations
+            return await withTimeout(
+                withRetry(
+                    () => this.processSubscription(request),
+                    { retries: 2, initialDelay: 500 }
+                ),
+                5000
+            );
+        } catch (error) {
+            // Log the error
+            await AuditLogger.logSystem(
+                AuditAction.SYSTEM_ERROR,
+                AuditStatus.FAILURE,
+                {
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    component: 'waitlist-subscribe',
+                    ip: getClientIp(request)
+                }
+            );
+
+            if (error instanceof Error && error.message.includes('timed out')) {
+                return errors.timeout('Subscription request timed out');
+            }
+
+            return this.handleError(error);
         }
+    }
 
-        const { email, name, source, metadata } = validation.data;
+    private async processSubscription(request: NextRequest): Promise<Response> {
+        try {
+            const { email, name } = await this.validateRequest(request);
+            
+            // Check if email already exists
+            const existingSubscriber = await this.findSubscriber(email);
 
-        // Check if email already exists
-        const existingSubscriber = await prisma.waitlistSubscriber.findUnique({
-            where: { email }
-        });
+            if (existingSubscriber) {
+                if (existingSubscriber.status === 'REJECTED') {
+                    // Re-subscribe if previously rejected
+                    const updatedSubscriber = await this.updateSubscriberStatus(
+                        email, 
+                        'SUBSCRIBED',
+                        { name: name || existingSubscriber.name }
+                    );
 
-        if (existingSubscriber) {
-            if (existingSubscriber.status === 'UNSUBSCRIBED') {
-                // Re-subscribe if previously unsubscribed
-                await prisma.waitlistSubscriber.update({
-                    where: { email },
-                    data: {
+                    // Send resubscription confirmation email
+                    await this.sendEmail('confirmation', email);
+
+                    // Log the subscription
+                    await this.logWaitlistActivity(
+                        AuditAction.SUBSCRIBE,
+                        AuditStatus.SUCCESS,
+                        email,
+                        { action: 'resubscribe' },
+                        request
+                    );
+
+                    return successResponse<WaitlistResponse>({
                         status: 'SUBSCRIBED',
-                        updatedAt: new Date(),
-                    }
-                });
-
-                // Send resubscription confirmation email
-                const template = emailClient.emailTemplates.waitlistConfirmation(email);
-                const emailResult = await emailClient.sendEmail({
-                    to: email,
-                    ...template
-                });
-
-                if (!emailResult.success) {
-                    console.error('Failed to send resubscription confirmation email:', emailResult.error);
-                    // Don't return error to client, as resubscription was successful
+                        subscriber: this.formatSubscriber(updatedSubscriber)
+                    }, 'Successfully re-subscribed to waitlist');
                 }
 
-                return successResponse({
-                    status: 'RESUBSCRIBED'
-                }, 'Successfully re-subscribed to waitlist');
+                if (existingSubscriber.status === 'SUBSCRIBED') {
+                    return errors.conflict('Email already subscribed to waitlist');
+                }
+
+                if (existingSubscriber.status === 'INVITED') {
+                    return errors.conflict('Email has been invited to join. Please check your email for the invitation.');
+                }
+
+                if (existingSubscriber.status === 'REGISTERED') {
+                    return errors.conflict('Email is already registered as a user.');
+                }
             }
 
-            return errors.conflict('Email already subscribed to waitlist');
-        }
+            // Create new subscriber
+            const subscriber = await this.createSubscriber(email, name);
 
-        // Create new subscriber
-        const subscriber = await prisma.waitlistSubscriber.create({
-            data: {
+            // Send confirmation email
+            await this.sendEmail('confirmation', email);
+
+            // Log the subscription
+            await this.logWaitlistActivity(
+                AuditAction.SUBSCRIBE,
+                AuditStatus.SUCCESS,
                 email,
-                name,
-                source,
-                metadata,
-                status: 'SUBSCRIBED'
-            }
-        });
+                { action: 'new-subscribe' },
+                request
+            );
 
-        // Send confirmation email
-        const template = emailClient.emailTemplates.waitlistConfirmation(email);
-        const emailResult = await emailClient.sendEmail({
-            to: email,
-            ...template
-        });
-
-        if (!emailResult.success) {
-            console.error('Failed to send confirmation email:', emailResult.error);
-            // Don't return error to client, as subscription was successful
+            return successResponse<WaitlistResponse>({
+                status: 'SUBSCRIBED',
+                subscriber: this.formatSubscriber(subscriber)
+            }, 'Successfully subscribed to waitlist');
+            
+        } catch (error) {
+            return this.handleError(error);
         }
-
-        return successResponse({
-            status: 'SUBSCRIBED',
-            subscriber: {
-                id: subscriber.id,
-                email: subscriber.email,
-                name: subscriber.name,
-                createdAt: subscriber.createdAt
-            }
-        }, 'Successfully subscribed to waitlist');
-
-    } catch (error: any) {
-        console.error("Waitlist subscription error:", error);
-        return errors.internal('Failed to process subscription', error.message);
     }
-} 
+}
+
+const route = new SubscribeRoute();
+
+// Explicitly bind to POST method and export
+export const POST = route.bindToMethod('POST');
+
+// Handle invalid methods
+export const GET = route.methodNotAllowed.bind(route);
+export const PUT = route.methodNotAllowed.bind(route);
+export const DELETE = route.methodNotAllowed.bind(route);
+export const PATCH = route.methodNotAllowed.bind(route);

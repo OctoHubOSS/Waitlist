@@ -1,6 +1,13 @@
 import React, { ComponentType } from 'react';
 import WaitlistConfirmationEmail from '@/templates/email/waitlist/confirmation';
 import WaitlistUnsubscribeEmail from '@/templates/email/waitlist/unsubscribe';
+import WelcomeEmail from '@/templates/email/auth/welcome';
+import AccountLockdownEmail from '@/templates/email/auth/account-lockdown';
+import PasswordResetEmail from '@/templates/email/auth/password-reset';
+import ForgotPasswordEmail from '@/templates/email/auth/forgot-password';
+import VerifyEmailEmail from '@/templates/email/auth/verify-email';
+import EmailChangeEmail from '@/templates/email/auth/email-change';
+import TwoFactorEmail from '@/templates/email/auth/two-factor';
 
 /**
  * Props for each email template type
@@ -11,6 +18,50 @@ export type EmailTemplateProps = {
   };
   waitlistUnsubscribe: {
     email: string;
+  };
+  welcome: {
+    name: string;
+    displayName: string;
+    email: string;
+  };
+  accountLockdown: {
+    name: string;
+    email: string;
+    ip: string;
+    timestamp: string;
+    unlockUrl: string;
+  };
+  passwordReset: {
+    name: string;
+    email: string;
+    resetUrl: string;
+    expiresIn: string;
+  };
+  forgotPassword: {
+    name: string;
+    email: string;
+    resetUrl: string;
+    expiresIn: string;
+  };
+  verifyEmail: {
+    name: string;
+    verifyUrl: string;
+    code: string;
+    email: string;
+    expiresIn: string;
+  };
+  emailChange: {
+    name: string;
+    oldEmail: string;
+    newEmail: string;
+    revertUrl: string;
+    expiresIn: string;
+  };
+  twoFactor: {
+    name: string;
+    email: string;
+    code: string;
+    expiresIn: string;
   };
 };
 
@@ -30,6 +81,13 @@ const templateComponents: {
 } = {
   waitlistConfirmation: WaitlistConfirmationEmail,
   waitlistUnsubscribe: WaitlistUnsubscribeEmail,
+  welcome: WelcomeEmail,
+  accountLockdown: AccountLockdownEmail,
+  passwordReset: PasswordResetEmail,
+  forgotPassword: ForgotPasswordEmail,
+  verifyEmail: VerifyEmailEmail,
+  emailChange: EmailChangeEmail,
+  twoFactor: TwoFactorEmail,
 };
 
 /**

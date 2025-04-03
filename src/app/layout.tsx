@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Metadata } from "next";
-import { absoluteUrl } from "@/utils/absoluteUrl";
+import { absoluteUrl } from "@/utils/urlBuilder/absoluteUrl";
+import SessionProvider from "@/components/providers/SessionProvider";
 
 export const metadata: Metadata = {
   title: {
@@ -37,10 +38,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-      <html lang="en" className="dark">
-        <body className="min-h-screen bg-gradient-to-b from-github-dark to-github-dark-secondary">
-          {children}
-        </body>
-      </html>
+    <html lang="en" className="dark">
+      <body className="min-h-screen bg-gradient-to-b from-github-dark to-github-dark-secondary">
+        <SessionProvider>{children}</SessionProvider>
+      </body>
+    </html>
   );
 }
