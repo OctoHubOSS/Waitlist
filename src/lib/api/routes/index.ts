@@ -2,17 +2,17 @@
  * API route base classes and utilities
  */
 
-// Export the base API route class
-export * from './base';
+// Core route handler
+export { BaseApiRoute } from './base';
 
-// Export specialized route base classes
-export * from './auth/base';
-export * from './waitlist/base';
-export * from './dashboard/base';
-export * from './bug-reports/base';
+// Feature-specific route handlers
+export { BaseWaitlistRoute } from './waitlist/base';
+export { BaseDashboardRoute } from './dashboard';
+export { BaseBugReportRoute } from './bug-reports';
+export { BaseAuthRoute } from './auth';
 
-// Export specific route implementations
-export * from './waitlist';
-export * from './auth';
-export * from './dashboard';
-export * from './bug-reports';
+// Example route
+export { ExampleRoute } from './example';
+
+// Route utilities
+export { convertRequest, createResponse, handleError, logRequest } from './utils';

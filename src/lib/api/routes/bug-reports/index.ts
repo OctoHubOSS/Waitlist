@@ -1,0 +1,1 @@
+export { BaseBugReportRoute } from './base'; 

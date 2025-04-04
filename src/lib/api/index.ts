@@ -1,37 +1,23 @@
-// Core types and utilities
-export * from './types';
-export * from './constants';
-export * from './endpoints';
+// Core types
+export * from '@/types/apiClient';
 
-// Export with explicit names to avoid naming conflicts
-export {
-    createSuccessResponse, 
-    createErrorResponse,
-    validateEmail,
-    validatePassword,
-    sanitizeInput,
-    generateRandomString,
-    formatDate,
-    isValidDate,
-    deepClone,
-    mergeObjects,
-    removeUndefined,
-    safeJsonParse,
-    createAbsoluteUrl,
-    formatApiError,
-    withTimeout,
-    withRetry
-} from './utils';
-
-// Configuration
-export * from './config';
-
-// Client functionality
+// Client
 export * from './client';
-export * from './services';
-export * from './validation';
 
-// Server-side functionality
-export * from './middleware';
+// Routes
 export * from './routes';
-export * from './routes/base';
+
+// Services
+export * from './services';
+
+// Utilities
+export * from './utils';
+
+// Middleware
+export * from './middleware';
+
+// Responses
+export * from './responses';
+
+// Endpoints
+export * from './endpoints';

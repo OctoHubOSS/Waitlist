@@ -4,6 +4,8 @@ import { BaseAuthRoute } from '../auth/base';
 import prisma from '@/lib/database';
 import { AuditLogger } from '@/lib/audit/logger';
 import { AuditAction, AuditStatus } from '@/types/auditLogs';
+import { BaseApiRoute } from '../../routes/base';
+import { validateRequest, rateLimit, requireAuth } from '../../middleware';
 
 /**
  * Base class for dashboard-related API routes
@@ -43,7 +45,7 @@ export abstract class BaseDashboardRoute<TRequest = any, TResponse = any> extend
      * Get recent activity for a user
      */
     protected async getUserRecentActivity(userId: string, limit: number = 10, onlyPublic: boolean = false) {
-        const actionsFilter = onlyPublic 
+        const actionsFilter = onlyPublic
             ? {
                 in: [
                     AuditAction.FEATURE_REQUESTED,
@@ -235,7 +237,7 @@ export abstract class BaseDashboardRoute<TRequest = any, TResponse = any> extend
             }
         });
     }
-    
+
     /**
      * Validate pagination parameters
      */
@@ -245,7 +247,7 @@ export abstract class BaseDashboardRoute<TRequest = any, TResponse = any> extend
         }
         return true;
     }
-    
+
     /**
      * Generate pagination metadata
      */
@@ -257,6 +259,70 @@ export abstract class BaseDashboardRoute<TRequest = any, TResponse = any> extend
             hasMore: (page * pageSize) < total,
             totalPages: Math.ceil(total / pageSize),
             hasPrevious: page > 1
+        };
+    }
+}
+
+/**
+ * Base dashboard route class
+ * 
+ * This class provides common functionality for all dashboard routes:
+ * - Default rate limiting
+ * - Default authentication
+ * - Default validation
+ * - Default audit logging
+ */
+export class BaseDashboardRoute<T = any, R = any> extends BaseApiRoute<T, R> {
+    constructor(config: {
+        path?: string;
+        method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+        schema?: {
+            request?: z.ZodType<T>;
+            response?: z.ZodType<R>;
+        };
+        middleware?: any[];
+        auditAction?: AuditAction;
+        requireAuth?: boolean;
+        rateLimit?: {
+            limit?: number;
+            windowMs?: number;
+        };
+        timeout?: number;
+    } = {}) {
+        super({
+            ...config,
+            auditAction: config.auditAction || AuditAction.DASHBOARD_ACCESS,
+            requireAuth: config.requireAuth ?? true,
+            rateLimit: config.rateLimit || {
+                limit: 100,
+                windowMs: 60000
+            }
+        });
+    }
+
+    /**
+     * Creates a success response with dashboard data
+     */
+    protected successResponse(data: R): ApiResponse<R> {
+        return {
+            data,
+            status: 200,
+            headers: {}
+        };
+    }
+
+    /**
+     * Creates an error response for dashboard operations
+     */
+    protected errorResponse(error: {
+        code: string;
+        message: string;
+        details?: any;
+    }, statusCode: number = 500): ApiResponse<R> {
+        return {
+            data: null as any,
+            status: statusCode,
+            headers: {}
         };
     }
 }

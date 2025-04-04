@@ -1,4 +1,4 @@
-import { ApiConfig } from './types';
+import { ApiConfig } from '@/types/apiClient';
 import { TIMEOUTS, RETRY_SETTINGS } from './constants';
 
 /**
@@ -9,20 +9,20 @@ export function getBaseUrl(): string {
     if (typeof window !== 'undefined') {
         return '';
     }
-    
+
     // Get environment values
     const vercelUrl = process.env.VERCEL_URL;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    
+
     // Return appropriate URL
     if (vercelUrl) {
         return `https://${vercelUrl}`;
     }
-    
+
     if (appUrl) {
         return appUrl.startsWith('http') ? appUrl : `http://${appUrl}`;
     }
-    
+
     return 'http://localhost:3000';
 }
 
@@ -109,11 +109,11 @@ export function createApiConfig(config: Partial<ApiConfig>): ApiConfig {
  */
 export function createServerApiConfig(config: Partial<ApiConfig> = {}): ApiConfig {
     const baseConfig = createApiConfig(config);
-    
+
     // Always use internal URL for server-side requests
     baseConfig.baseUrl = `${getBaseUrl()}/api`;
     baseConfig.useSession = false; // Don't auto-fetch session on server
-    
+
     return baseConfig;
 }
 
@@ -122,11 +122,13 @@ export function createServerApiConfig(config: Partial<ApiConfig> = {}): ApiConfi
  */
 export function createClientApiConfig(config: Partial<ApiConfig> = {}): ApiConfig {
     const baseConfig = createApiConfig(config);
-    
-    // Use relative URL for client-side requests
-    baseConfig.baseUrl = '/api';
-    baseConfig.useSession = true; // Auto-fetch session on client
-    
+
+    // Use relative URL for client-side requests if not specified
+    baseConfig.baseUrl = config.baseUrl || '/api';
+    baseConfig.useSession = config.useSession !== undefined ? config.useSession : true;
+
+    console.log('Client API config baseUrl:', baseConfig.baseUrl);
+
     return baseConfig;
 }
 
@@ -155,4 +157,4 @@ export function validateApiConfig(config: ApiConfig): boolean {
     }
 
     return true;
-}
+} 

@@ -1,50 +1,78 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { BaseApiRoute } from '../base';
+import { BaseApiRoute } from '../../routes/base';
 import prisma from '@/lib/database';
 import { AuditLogger } from '@/lib/audit/logger';
 import { emailClient } from '@/lib/email/client';
-import { WaitlistStatus } from '@/lib/api/types';
+import { WaitlistStatus } from '@prisma/client';
 import { AuditAction, AuditStatus } from '@/types/auditLogs';
+import { validateRequest, rateLimit, requireAuth } from '../../middleware';
+import { ApiResponse } from '@/types/apiClient';
 
 interface LogWaitlistActivityParams {
-  action: AuditAction;
-  status: AuditStatus;
-  email: string;
-  details?: Record<string, any>;
-  request?: NextRequest;
+    action: AuditAction;
+    status: AuditStatus;
+    email: string;
+    details?: Record<string, any>;
+    request?: NextRequest;
 }
 
-export abstract class BaseWaitlistRoute<TRequest = any, TResponse = any> extends BaseApiRoute<TRequest, TResponse> {
-    /**
-     * Logs waitlist-related activity
-     */
-    protected async logWaitlistActivity({
-        action,
-        status,
-        email,
-        details,
-        request
-    }: LogWaitlistActivityParams): Promise<void> {
-        try {
-            // Find subscriber by email
-            const subscriber = await prisma.waitlistSubscriber.findUnique({
-                where: { email: email }  // Make sure email is explicitly assigned
-            });
-
-            if (!subscriber) {
-                console.warn(`Attempted to log activity for non-existent subscriber: ${email}`);
-                return;
+/**
+ * Base waitlist route class
+ * 
+ * This class provides common functionality for all waitlist routes:
+ * - Default rate limiting
+ * - Default validation
+ * - Default audit logging
+ */
+export class BaseWaitlistRoute<T = any, R = any> extends BaseApiRoute<T, R> {
+    constructor(config: {
+        path?: string;
+        method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+        schema?: {
+            request?: z.ZodType<T>;
+            response?: z.ZodType<R>;
+        };
+        middleware?: any[];
+        auditAction?: AuditAction;
+        requireAuth?: boolean;
+        rateLimit?: {
+            limit?: number;
+            windowMs?: number;
+        };
+        timeout?: number;
+    } = {}) {
+        super({
+            ...config,
+            auditAction: config.auditAction || AuditAction.SUBSCRIBE,
+            requireAuth: config.requireAuth ?? false,
+            rateLimit: config.rateLimit || {
+                limit: 50,
+                windowMs: 60000
             }
+        });
+    }
 
-            // Log the action
+    /**
+     * Logs waitlist activity
+     */
+    protected async logWaitlistActivity(
+        action: AuditAction,
+        status: AuditStatus,
+        userId?: string,
+        subscriberId?: string,
+        details?: Record<string, any>,
+        request?: NextRequest
+    ): Promise<void> {
+        try {
             await AuditLogger.logSystem(
                 action,
                 status,
                 {
-                    subscriberId: subscriber.id,
-                    email,
-                    ...details
+                    userId,
+                    subscriberId,
+                    ...details,
+                    waitlistAction: true
                 },
                 request
             );
@@ -80,10 +108,10 @@ export abstract class BaseWaitlistRoute<TRequest = any, TResponse = any> extends
         email: string
     ): Promise<boolean> {
         try {
-            const template = type === 'confirmation' 
+            const template = type === 'confirmation'
                 ? emailClient.emailTemplates.waitlistConfirmation(email)
                 : emailClient.emailTemplates.waitlistUnsubscribe(email);
-            
+
             const emailResult = await emailClient.sendEmail({
                 to: email,
                 from: {
@@ -97,7 +125,7 @@ export abstract class BaseWaitlistRoute<TRequest = any, TResponse = any> extends
                 console.error(`Failed to send ${type} email:`, emailResult.error);
                 return false;
             }
-            
+
             return true;
         } catch (error) {
             console.error(`Error sending ${type} email:`, error);
@@ -129,7 +157,7 @@ export abstract class BaseWaitlistRoute<TRequest = any, TResponse = any> extends
     protected async createSubscriber(
         email: string,
         name?: string | null,
-        status: WaitlistStatus = 'SUBSCRIBED',
+        status: WaitlistStatus = WaitlistStatus.PENDING,
         additionalData: Record<string, any> = {}
     ) {
         return prisma.waitlistSubscriber.create({
@@ -153,6 +181,32 @@ export abstract class BaseWaitlistRoute<TRequest = any, TResponse = any> extends
             status: subscriber.status,
             createdAt: subscriber.createdAt.toISOString(),
             updatedAt: subscriber.updatedAt.toISOString()
+        };
+    }
+
+    /**
+     * Creates a success response with waitlist data
+     */
+    protected successResponse(data: R): ApiResponse<R> {
+        return {
+            data,
+            status: 200,
+            headers: {}
+        };
+    }
+
+    /**
+     * Creates an error response for waitlist operations
+     */
+    protected errorResponse(error: {
+        code: string;
+        message: string;
+        details?: any;
+    }, statusCode: number = 500): ApiResponse<R> {
+        return {
+            data: null as any,
+            status: statusCode,
+            headers: {}
         };
     }
 }

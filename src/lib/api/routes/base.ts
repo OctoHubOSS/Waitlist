@@ -1,12 +1,13 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { ApiRequest, ApiResponse, ApiMiddleware, ApiValidationSchema, ApiHandler, RouteConfig } from '@/types/apiClient';
 import { z } from 'zod';
 import { createErrorResponse } from '@/lib/api/utils';
 import { AuditLogger } from '@/lib/audit/logger';
 import { withTimeout } from '@/lib/api/utils';
 import { AuditAction, AuditStatus } from "@/types/auditLogs";
 import { clientInfo } from '@/lib/client';
-import { parseUserAgent } from '@/lib/utils/user-agent';
 import { responses } from '@/lib/api/responses';
+import { validateRequest, rateLimit, requireAuth, logRequest } from '../middleware';
 
 /**
  * Base API route class
@@ -17,24 +18,322 @@ import { responses } from '@/lib/api/responses';
  * - Request timeout support
  * - Audit logging
  * - Comprehensive error types
+ * - Middleware support
+ * - Routing capabilities
  */
-export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
-    private schema: z.ZodType<TRequest>;
-    
-    /**
-     * Creates a new API route with request validation
-     * 
-     * @param schema - The Zod schema used to validate incoming requests
-     */
-    constructor(schema: z.ZodType<TRequest>) {
-        this.schema = schema;
+export class BaseApiRoute<T = any, R = any> {
+    protected path?: string;
+    protected method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+    protected schema?: ApiValidationSchema<T>;
+    protected middleware: ApiMiddleware[];
+    protected auditAction: AuditAction;
+    protected requireAuth: boolean;
+    protected rateLimit?: {
+        limit: number;
+        windowMs: number;
+    };
+    protected timeout?: number;
+    protected handler: ApiHandler<T, R>;
+    protected logger: AuditLogger;
+
+    constructor(config: RouteConfig<T, R> = {}) {
+        this.path = config.path;
+        this.method = config.method;
+        this.schema = config.schema;
+        this.middleware = config.middleware || [];
+        this.auditAction = config.auditAction || AuditAction.SYSTEM_INFO;
+        this.requireAuth = config.requireAuth || false;
+        this.rateLimit = config.rateLimit ? {
+            limit: config.rateLimit.limit || 100,
+            windowMs: config.rateLimit.windowMs || 60000
+        } : undefined;
+        this.timeout = config.timeout;
+        this.handler = this.handle.bind(this);
+        this.logger = new AuditLogger();
+
+        // Add default middleware
+        this.addDefaultMiddleware();
     }
 
     /**
-     * Entry point for handling HTTP requests
-     * Must be implemented by subclasses
+     * Adds default middleware to the route
      */
-    abstract handle(request: NextRequest): Promise<Response>;
+    protected addDefaultMiddleware(): void {
+        // Add request logging
+        this.middleware.unshift(logRequest());
+
+        // Add rate limiting if configured
+        if (this.rateLimit) {
+            this.middleware.unshift(rateLimit({
+                limit: this.rateLimit.limit,
+                windowMs: this.rateLimit.windowMs
+            }));
+        }
+
+        // Add authentication if required
+        if (this.requireAuth) {
+            this.middleware.unshift(requireAuth());
+        }
+
+        // Add request validation if schema is provided
+        if (this.schema?.request) {
+            this.middleware.unshift(validateRequest(this.schema.request));
+        }
+    }
+
+    /**
+     * Adds middleware to the route
+     */
+    addMiddleware(middleware: ApiMiddleware): this {
+        this.middleware.push(middleware);
+        return this;
+    }
+
+    /**
+     * Sets the route path
+     */
+    setPath(path: string): this {
+        this.path = path;
+        return this;
+    }
+
+    /**
+     * Sets the route method
+     */
+    setMethod(method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'): this {
+        this.method = method;
+        return this;
+    }
+
+    /**
+     * Sets the validation schema
+     */
+    setSchema(schema: ApiValidationSchema<T>): this {
+        this.schema = schema;
+        return this;
+    }
+
+    /**
+     * Sets the audit action
+     */
+    setAuditAction(action: AuditAction): this {
+        this.auditAction = action;
+        return this;
+    }
+
+    /**
+     * Sets authentication requirement
+     */
+    setRequireAuth(require: boolean): this {
+        this.requireAuth = require;
+        return this;
+    }
+
+    /**
+     * Sets rate limiting
+     */
+    setRateLimit(limit: number, windowMs: number = 60000): this {
+        this.rateLimit = { limit, windowMs };
+        return this;
+    }
+
+    /**
+     * Sets request timeout
+     */
+    setTimeout(ms: number): this {
+        this.timeout = ms;
+        return this;
+    }
+
+    /**
+     * Main request handler
+     */
+    async handleRequest(request: NextRequest): Promise<NextResponse> {
+        const startTime = Date.now();
+        let status = AuditStatus.SUCCESS;
+
+        try {
+            // Convert NextRequest to ApiRequest
+            const apiRequest = await this.convertRequest(request);
+
+            // Create response object
+            const apiResponse: ApiResponse = {
+                data: null,
+                status: 200,
+                headers: {}
+            };
+
+            // Run middleware chain
+            await this.runMiddleware(apiRequest, apiResponse);
+
+            // Handle the request
+            const result = await this.handler(apiRequest);
+
+            // Convert to NextResponse
+            return this.createResponse(result);
+        } catch (error) {
+            status = AuditStatus.FAILURE;
+            return this.handleError(error);
+        } finally {
+            // Log the request
+            const duration = Date.now() - startTime;
+            await AuditLogger.log({
+                action: this.auditAction,
+                status,
+                details: {
+                    method: request.method,
+                    path: request.nextUrl.pathname,
+                    duration
+                }
+            });
+        }
+    }
+
+    /**
+     * Request handler to be implemented by child classes
+     */
+    protected async handle(request: ApiRequest<T>): Promise<ApiResponse<R>> {
+        throw new Error('handle method must be implemented by child class');
+    }
+
+    /**
+     * Converts NextRequest to ApiRequest
+     */
+    protected async convertRequest(request: NextRequest): Promise<ApiRequest<T>> {
+        const body = await request.json().catch(() => undefined);
+        const params = Object.fromEntries(request.nextUrl.searchParams);
+
+        return {
+            url: request.url,
+            path: request.nextUrl.pathname,
+            method: request.method as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+            data: body,
+            params,
+            headers: Object.fromEntries(request.headers),
+            nextUrl: request.nextUrl
+        };
+    }
+
+    /**
+     * Creates a NextResponse from ApiResponse
+     */
+    protected createResponse(response: ApiResponse<R>): NextResponse {
+        return NextResponse.json(response.data, {
+            status: response.status,
+            headers: {
+                'Content-Type': 'application/json',
+                ...response.headers
+            }
+        });
+    }
+
+    /**
+     * Handles errors and creates error response
+     */
+    protected handleError(error: any): NextResponse {
+        console.error('API Error:', error);
+
+        const status = error?.statusCode || 500;
+        const message = error?.message || 'An unexpected error occurred';
+        const details = process.env.NODE_ENV === 'development' ? error : undefined;
+
+        return NextResponse.json({
+            error: {
+                code: error?.code || 'INTERNAL_ERROR',
+                message,
+                details
+            }
+        }, {
+            status,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+    }
+
+    /**
+     * Runs the middleware chain
+     */
+    protected async runMiddleware(req: ApiRequest, res: ApiResponse): Promise<void> {
+        const middleware = [...this.middleware];
+
+        const next = async () => {
+            const mw = middleware.shift();
+            if (mw) {
+                await mw(req, res, next);
+            }
+        };
+
+        await next();
+    }
+
+    /**
+     * Validates request data against schema
+     */
+    protected async validateRequest(data: any): Promise<T> {
+        if (!this.schema?.request) {
+            return data;
+        }
+
+        try {
+            return await this.schema.request.parseAsync(data);
+        } catch (error) {
+            if (error instanceof z.ZodError) {
+                throw {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Invalid request data',
+                    details: error.errors
+                };
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Creates a success response
+     */
+    protected successResponse(data: R, message?: string): ApiResponse<R> {
+        return {
+            data,
+            status: 200,
+            headers: {}
+        };
+    }
+
+    /**
+     * Creates an error response
+     */
+    protected errorResponse(error: {
+        code: string;
+        message: string;
+        details?: any;
+    }, statusCode: number = 500): ApiResponse<R> {
+        return {
+            data: null as any,
+            status: statusCode,
+            headers: {}
+        };
+    }
+
+    /**
+     * Logs audit information
+     */
+    protected async logAudit(
+        status: AuditStatus,
+        details?: Record<string, any>,
+        request?: NextRequest
+    ): Promise<void> {
+        try {
+            await AuditLogger.logSystem(
+                this.auditAction,
+                status,
+                details,
+                request
+            );
+        } catch (error) {
+            console.error('Failed to log audit:', error);
+        }
+    }
 
     /**
      * Method not allowed handler - used for HTTP methods that aren't supported by the route
@@ -68,132 +367,17 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
     private boundMethod?: string;
 
     /**
-     * Binds this route's handle method to a specific HTTP method
+     * Binds the route to a specific HTTP method
      */
     public bindToMethod(method: string): (req: NextRequest) => Promise<Response> {
         this.boundMethod = method.toUpperCase();
-        return this.handle.bind(this);
+        return async (req: NextRequest) => {
+            const apiRequest = await this.convertRequest(req);
+            const result = await this.handler(apiRequest);
+            return this.createResponse(result);
+        };
     }
 
-    /**
-     * Validates a request against the schema
-     * 
-     * @param request - The NextRequest object
-     * @returns The validated request data
-     */
-    protected async validateRequest(request: NextRequest): Promise<TRequest> {
-        try {
-            let data: any;
-            
-            // Check HTTP method to determine how to parse the request
-            const method = request.method.toUpperCase();
-            
-            if (method === 'GET') {
-                // For GET requests, extract data from URL parameters
-                const url = new URL(request.url);
-                const params: Record<string, any> = {};
-                
-                for (const [key, value] of url.searchParams.entries()) {
-                    params[key] = value;
-                }
-                
-                data = params;
-            } else {
-                // For other methods, try to parse JSON body
-                try {
-                    const contentType = request.headers.get('content-type');
-                    
-                    if (contentType?.includes('application/json')) {
-                        // Parse JSON body
-                        data = await request.json();
-                    } else if (contentType?.includes('multipart/form-data')) {
-                        // Handle form data
-                        const formData = await request.formData();
-                        data = Object.fromEntries(formData);
-                    } else if (contentType?.includes('application/x-www-form-urlencoded')) {
-                        // Handle URL encoded form data
-                        const formData = await request.formData();
-                        data = Object.fromEntries(formData);
-                    } else {
-                        // Fallback: try to parse as JSON anyway
-                        try {
-                            data = await request.json();
-                        } catch (e) {
-                            // If parsing fails, use an empty object
-                            data = {};
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error parsing request body:', error);
-                    throw new Error('Invalid request format');
-                }
-            }
-            
-            // Validate the data against the schema
-            return await this.schema.parseAsync(data);
-        } catch (error) {
-            // Log validation errors
-            await this.logApiError(
-                AuditAction.SYSTEM_WARNING,
-                'Request validation failed',
-                {
-                    error: error instanceof Error ? error.message : String(error),
-                    url: request.url,
-                    method: request.method
-                },
-                request
-            );
-            
-            // Handle Zod validation errors
-            if (error instanceof z.ZodError) {
-                const issues = error.issues.map(issue => ({
-                    path: issue.path.join('.'),
-                    message: issue.message
-                }));
-                
-                throw {
-                    type: 'validation',
-                    issues
-                };
-            }
-            
-            throw error;
-        }
-    }
-    
-    /**
-     * Handles errors that occur during request processing
-     * 
-     * @param error - The error object
-     * @returns A standardized error response
-     */
-    protected handleError(error: any): Response {
-        // Log the error
-        console.error('API error:', error);
-        
-        // Handle validation errors
-        if (error && error.type === 'validation') {
-            return responses.badRequest('Validation failed', {
-                validation: error.issues
-            });
-        }
-        
-        // Handle timeout errors
-        if (error instanceof Error && error.message.includes('timed out')) {
-            return responses.timeout('Request timed out');
-        }
-        
-        // Handle database errors
-        if (error?.code?.startsWith('P')) {
-            return responses.internal('Database operation failed');
-        }
-        
-        // Handle other errors
-        return responses.internal(
-            error instanceof Error ? error.message : 'An unexpected error occurred'
-        );
-    }
-    
     /**
      * Wraps a handler with a timeout
      * 
@@ -207,7 +391,7 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
     ): Promise<T> {
         return withTimeout(handler(), timeoutMs);
     }
-    
+
     /**
      * Logs API errors to the audit system
      */
@@ -226,7 +410,7 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
                 time: new Date().toISOString(),
                 headers: this.getRequestHeadersForLogging(request)
             };
-            
+
             await AuditLogger.logSystem(
                 action,
                 AuditStatus.FAILURE,
@@ -242,13 +426,13 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
             console.error('Failed to log API error:', logError);
         }
     }
-    
+
     /**
      * Extract headers for logging, removing sensitive information
      */
     private getRequestHeadersForLogging(request: NextRequest): Record<string, string> {
         const headers: Record<string, string> = {};
-        
+
         try {
             if (request && request.headers) {
                 // Get important headers specifically
@@ -266,7 +450,7 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
                     'accept-language',
                     'x-vercel-forwarded-for'
                 ];
-                
+
                 // Only log specific headers to avoid sensitive data
                 for (const header of importantHeaders) {
                     const value = request.headers.get(header);
@@ -278,10 +462,10 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
         } catch (error) {
             console.warn('Error extracting headers for logging:', error);
         }
-        
+
         return headers;
     }
-    
+
     /**
      * Safely extracts request IP for logging purposes
      */
@@ -290,32 +474,32 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
             const ipHeaders = [
                 'x-vercel-forwarded-for',
                 'cf-connecting-ip',
-                'x-forwarded-for', 
+                'x-forwarded-for',
                 'true-client-ip',
                 'x-real-ip'
             ];
-            
+
             for (const header of ipHeaders) {
                 const value = request.headers.get(header);
                 if (value) {
-                    const ip = header.includes('forwarded-for') 
-                        ? value.split(',')[0].trim() 
+                    const ip = header.includes('forwarded-for')
+                        ? value.split(',')[0].trim()
                         : value;
                     return ip;
                 }
             }
-            
+
             // Try edge runtime ip property (NextRequest in edge runtime might have this)
             const edgeRequest = request as any;
             if (edgeRequest.ip) return edgeRequest.ip;
-            
+
             return 'unknown';
         } catch (error) {
             console.warn('Failed to extract IP from request:', error);
             return 'unknown';
         }
     }
-    
+
     /**
      * Safely extracts request headers for logging
      */
@@ -333,7 +517,7 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
             return { error: 'Failed to extract headers' };
         }
     }
-    
+
     /**
      * Gets client information from a request
      * 
@@ -352,7 +536,7 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
             };
         }
     }
-    
+
     /**
      * Extracts form data from a request
      * 

@@ -6,6 +6,13 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { FaArrowLeft, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import { createApiClient } from '@/lib/api/client';
+import { createClientApiConfig } from '@/lib/api/config';
+
+// Fix: Configure the client with the explicit baseUrl
+const apiClient = createApiClient(createClientApiConfig({
+  baseUrl: '/api' // Explicitly set the base URL to /api
+}));
 
 // Loading component
 function UnsubscribeLoading() {
@@ -40,17 +47,9 @@ function UnsubscribeForm() {
         setError(null);
 
         try {
-            const response = await fetch('/api/waitlist/unsubscribe', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email: emailInput }),
-            });
+            const data = await unsubscribeFromWaitlist(emailInput);
 
-            const data = await response.json();
-
-            if (!response.ok) {
+            if (!data.success) {
                 throw new Error(data.message || 'Failed to unsubscribe. Please try again.');
             }
 
@@ -172,6 +171,25 @@ function UnsubscribeForm() {
         </div>
     );
 }
+
+// Replace API calls with the proper API client
+const unsubscribeFromWaitlist = async (email: string, reason?: string) => {
+    try {
+        // Ensure the path is directly to waitlist/unsubscribe without /api prefix
+        const response = await apiClient.post('/waitlist/unsubscribe', {
+            email,
+            reason,
+        });
+        
+        return response;
+    } catch (error) {
+        console.error('Error unsubscribing from waitlist:', error);
+        return {
+            success: false,
+            message: 'Failed to unsubscribe from waitlist',
+        };
+    }
+};
 
 // Main page component wrapped with Suspense
 export default function UnsubscribePage() {

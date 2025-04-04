@@ -1,26 +1,58 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { BaseAuthRoute } from '../auth/base';
+import { BaseApiRoute } from '../../routes/base';
 import prisma from '@/lib/database';
 import { AuditLogger } from '@/lib/audit/logger';
 import { AuditAction, AuditStatus } from '@/types/auditLogs';
 import { BugStatus, Priority, Severity, ReactionType } from '@prisma/client';
+import { validateRequest, rateLimit, requireAuth } from '../../middleware';
+import { ApiResponse } from '@/types/apiClient';
 
 /**
- * Base class for bug report related API routes
+ * Base bug report route class
  * 
- * This class extends BaseAuthRoute with specialized methods for working with bug reports,
- * including status transitions, permissions, and data formatting.
+ * This class provides common functionality for all bug report routes:
+ * - Default rate limiting
+ * - Default authentication
+ * - Default validation
+ * - Default audit logging
  */
-export abstract class BaseBugReportRoute<TRequest = any, TResponse = any> extends BaseAuthRoute<TRequest, TResponse> {
+export class BaseBugReportRoute<T = any, R = any> extends BaseApiRoute<T, R> {
+    constructor(config: {
+        path?: string;
+        method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+        schema?: {
+            request?: z.ZodType<T>;
+            response?: z.ZodType<R>;
+        };
+        middleware?: any[];
+        auditAction?: AuditAction;
+        requireAuth?: boolean;
+        rateLimit?: {
+            limit?: number;
+            windowMs?: number;
+        };
+        timeout?: number;
+    } = {}) {
+        super({
+            ...config,
+            auditAction: config.auditAction || AuditAction.CUSTOM,
+            requireAuth: config.requireAuth ?? true,
+            rateLimit: config.rateLimit || {
+                limit: 20,
+                windowMs: 60000
+            }
+        });
+    }
+
     /**
-     * Logs bug report-related activity
+     * Logs bug report activity
      */
     protected async logBugReportActivity(
         action: AuditAction,
         status: AuditStatus,
         userId: string,
-        bugReportId: string,
+        bugReportId?: string,
         details?: Record<string, any>,
         request?: NextRequest
     ): Promise<void> {
@@ -31,7 +63,8 @@ export abstract class BaseBugReportRoute<TRequest = any, TResponse = any> extend
                 {
                     userId,
                     bugReportId,
-                    ...details
+                    ...details,
+                    bugReportAction: true
                 },
                 request
             );
@@ -101,7 +134,7 @@ export abstract class BaseBugReportRoute<TRequest = any, TResponse = any> extend
         if (userRole === 'ADMIN' || userRole === 'MODERATOR') {
             return true;
         }
-        
+
         // Otherwise, only the author can modify their own reports
         return bugReport.authorId === userId;
     }
@@ -187,7 +220,7 @@ export abstract class BaseBugReportRoute<TRequest = any, TResponse = any> extend
 
         return allowedTransitions[currentStatus]?.includes(newStatus) || false;
     }
-    
+
     /**
      * Get bug reports with pagination and filtering
      */
@@ -237,6 +270,32 @@ export abstract class BaseBugReportRoute<TRequest = any, TResponse = any> extend
                 pageSize,
                 hasMore: skip + bugReports.length < totalBugReports
             }
+        };
+    }
+
+    /**
+     * Creates a success response with bug report data
+     */
+    protected successResponse(data: R): ApiResponse<R> {
+        return {
+            data,
+            status: 200,
+            headers: {}
+        };
+    }
+
+    /**
+     * Creates an error response for bug report operations
+     */
+    protected errorResponse(error: {
+        code: string;
+        message: string;
+        details?: any;
+    }, statusCode: number = 500): ApiResponse<R> {
+        return {
+            data: null as any,
+            status: statusCode,
+            headers: {}
         };
     }
 }

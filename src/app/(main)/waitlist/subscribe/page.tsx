@@ -6,6 +6,14 @@ import { toast, Toaster } from 'react-hot-toast';
 import Image from 'next/image';
 import { FaShieldAlt, FaEnvelope, FaUserShield, FaTimes, FaCheck, FaBan } from 'react-icons/fa';
 import Link from 'next/link';
+import { createApiClient } from '@/lib/api/client';
+import { createClientApiConfig } from '@/lib/api/config';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
+
+// Fix: Configure the client with the explicit baseUrl
+const apiClient = createApiClient(createClientApiConfig({
+  baseUrl: '/api' // Explicitly set the base URL to /api
+}));
 
 export default function SubscribePage() {
     const [email, setEmail] = useState('');
@@ -13,6 +21,31 @@ export default function SubscribePage() {
     const [isAlreadySubscribed, setIsAlreadySubscribed] = useState(false);
     const [showUnsubscribePrompt, setShowUnsubscribePrompt] = useState(false);
     const [imgError, setImgError] = useState(false);
+
+    // Use the API client provided by the library
+    const subscribeToWaitlist = async (email: string, name?: string, referralCode?: string, metadata?: Record<string, any>) => {
+        try {
+            // Use a direct path without /api prefix since the client adds it
+            const response = await apiClient.post(
+                '/waitlist/subscribe', 
+                {
+                    email,
+                    name,
+                    referralCode,
+                    source: 'website',
+                    metadata
+                }
+            );
+            
+            return response;
+        } catch (error) {
+            console.error('Error subscribing to waitlist:', error);
+            return {
+                success: false,
+                message: 'Failed to subscribe to waitlist',
+            };
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,27 +55,16 @@ export default function SubscribePage() {
         setIsSubmitting(true);
 
         try {
-            const response = await fetch('/api/waitlist/subscribe', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    source: 'subscribe-page',
-                }),
-            });
+            const data = await subscribeToWaitlist(email);
 
-            const data = await response.json();
-
-            if (response.status === 409) {
+            if (data.status === 409) {
                 setIsAlreadySubscribed(true);
                 setShowUnsubscribePrompt(true);
                 return;
             }
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to join waitlist');
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to join waitlist');
             }
 
             toast.success('Successfully joined the waitlist! Check your email for confirmation.');
