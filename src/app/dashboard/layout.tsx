@@ -15,12 +15,12 @@ export default async function DashboardLayout({
 
     return (
         <div className="min-h-screen bg-github-dark">
-            <div className="flex">
+            <div className="lg:grid lg:grid-cols-[256px_1fr]">
                 <DashboardNav />
-                <main className="flex-1 p-8">
+                <main className="p-8">
                     {children}
                 </main>
             </div>
         </div>
     );
-}     
+}

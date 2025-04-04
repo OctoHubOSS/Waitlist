@@ -9,17 +9,25 @@ async function getSessionsData() {
         redirect('/auth/login');
     }
 
-    const response = await fetch(`/api/dashboard/sessions`, {
-        headers: {
-            'X-User-Email': session.user.email,
-        },
-    });
-
-    if (!response.ok) {
-        throw new Error('Failed to fetch sessions');
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/dashboard/sessions`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch sessions data');
+        }
+        
+        const data = await response.json();
+        return data.data;
+    } catch (error) {
+        console.error('Sessions data fetch error:', error);
+        // Return empty data to prevent UI crashes
+        return { sessions: [] };
     }
-
-    return response.json();
 }
 
 export default async function SessionsPage() {
@@ -30,11 +38,11 @@ export default async function SessionsPage() {
             <div>
                 <h1 className="text-2xl font-bold text-white">Sessions</h1>
                 <p className="mt-1 text-sm text-github-text-secondary">
-                    Manage your active sessions
+                    Manage your active sessions across devices
                 </p>
             </div>
 
             <SessionsSection sessions={data.sessions} />
         </div>
     );
-} 
+}

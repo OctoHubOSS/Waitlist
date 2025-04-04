@@ -1,32 +1,41 @@
 export enum AuditAction {
-    // Auth actions
+    // System actions
+    SYSTEM_INFO = 'SYSTEM_INFO',
+    SYSTEM_WARNING = 'SYSTEM_WARNING',
+    SYSTEM_ERROR = 'SYSTEM_ERROR',
+    
+    // Authentication actions
     LOGIN = 'LOGIN',
     LOGOUT = 'LOGOUT',
     REGISTER = 'REGISTER',
-    PASSWORD_RESET = 'PASSWORD_RESET',
     PASSWORD_CHANGE = 'PASSWORD_CHANGE',
+    PASSWORD_RESET = 'PASSWORD_RESET',
     EMAIL_VERIFICATION = 'EMAIL_VERIFICATION',
-    ACCOUNT_LOCKDOWN = 'ACCOUNT_LOCKDOWN',
-    EMAIL_CHANGE = 'EMAIL_CHANGE',
     TWO_FACTOR_SETUP = 'TWO_FACTOR_SETUP',
     TWO_FACTOR_VERIFICATION = 'TWO_FACTOR_VERIFICATION',
-
+    
     // Waitlist actions
     SUBSCRIBE = 'SUBSCRIBE',
     UNSUBSCRIBE = 'UNSUBSCRIBE',
-    UPDATE_STATUS = 'UPDATE_STATUS',
-
-    // Profile actions
-    UPDATE_PROFILE = 'UPDATE_PROFILE',
-    UPDATE_SETTINGS = 'UPDATE_SETTINGS',
-
-    // System actions
-    SYSTEM_ERROR = 'SYSTEM_ERROR',
-    SYSTEM_WARNING = 'SYSTEM_WARNING',
+    INVITE = 'INVITE',
+    
+    // User actions
+    PROFILE_UPDATE = 'PROFILE_UPDATE',
+    
+    // Dashboard access
+    DASHBOARD_ACCESS = 'DASHBOARD_ACCESS',
+    
+    // Feature requests
+    FEATURE_REQUEST_CREATE = 'FEATURE_REQUEST_CREATE',
+    FEATURE_REQUEST_UPDATE = 'FEATURE_REQUEST_UPDATE',
+    
+    // Custom action
+    CUSTOM = 'CUSTOM'
 }
 
 export enum AuditStatus {
     SUCCESS = 'SUCCESS',
     FAILURE = 'FAILURE',
-    PENDING = 'PENDING',
+    WARNING = 'WARNING',
+    INFO = 'INFO'
 }

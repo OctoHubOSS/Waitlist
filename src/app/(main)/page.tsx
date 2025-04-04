@@ -13,9 +13,6 @@ export default function ComingSoonPage() {
   return (
     <div className="container mx-auto">
       <div className="relative flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        {/* Background elements */}
-        <Background />
-
         <motion.div
           className="relative z-10 w-full max-w-4xl space-y-16"
           initial={{ opacity: 0, y: 20 }}
@@ -29,7 +26,7 @@ export default function ComingSoonPage() {
           <Countdown />
 
           {/* Features Section */}
-          <section id="features" className="w-full py-16 bg-github-dark-secondary">
+          <section id="features" className="w-full py-16">
             <Features />
           </section>
 

@@ -13,7 +13,7 @@ export default function MainLayout({
     return (
         <div className={`min-h-screen flex flex-col ${inter.className}`}>
             <Navbar />
-            <main className="flex-grow">{children}</main>
+            <main className="flex-grow my-20">{children}</main>
             <Footer />
             <Toaster position="bottom-right" />
         </div>

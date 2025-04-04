@@ -1,78 +1,67 @@
 import { z } from "zod";
 import { NextRequest } from "next/server";
 import { successResponse, errors } from "@/lib/api/responses";
-import { UnsubscribeRequest, WaitlistResponse } from "@/lib/api/types";
 import { BaseWaitlistRoute } from "@/lib/api/routes/waitlist/base";
-import { AuditAction, AuditStatus } from "@/types/auditLogs";
-import { withTimeout } from "@/lib/api/utils";
+import { WaitlistStatus } from '@prisma/client';
+import prisma from '@/lib/database';
 
-// Unsubscribe request schema validation
-const unsubscribeRequestSchema = z.object({
-    email: z.string().email(),
-}) satisfies z.ZodType<UnsubscribeRequest>;
+const unsubscribeSchema = z.object({
+  email: z.string().email(),
+  reason: z.string().optional(),
+});
 
-class UnsubscribeRoute extends BaseWaitlistRoute<UnsubscribeRequest, WaitlistResponse> {
-    constructor() {
-        super(unsubscribeRequestSchema);
+class UnsubscribeRoute extends BaseWaitlistRoute<z.infer<typeof unsubscribeSchema>> {
+  constructor() {
+    super(unsubscribeSchema);
+  }
+
+  async handle(request: NextRequest): Promise<Response> {
+    try {
+      const data = await this.validateRequest(request);
+      const { email, reason } = data;
+
+      const subscriber = await prisma.waitlistSubscriber.findUnique({
+        where: { email },
+      });
+
+      if (!subscriber) {
+        return errors.notFound('Subscriber not found');
+      }
+
+      await prisma.waitlistSubscriber.update({
+        where: { email },
+        data: {
+          status: WaitlistStatus.UNSUBSCRIBED,
+          updatedAt: new Date(),
+          ...(reason && {
+            metadata: {
+              ...(subscriber.metadata as Record<string, any> || {}),
+              unsubscribeReason: reason,
+              unsubscribedAt: new Date().toISOString(),
+            },
+          }),
+        },
+      });
+
+      await this.logWaitlistActivity({
+        action: 'WAITLIST_STATUS_CHANGED',
+        status: 'SUCCESS',
+        email,
+        details: {
+          oldStatus: subscriber.status,
+          newStatus: WaitlistStatus.UNSUBSCRIBED,
+          reason,
+        },
+        request,
+      });
+
+      return successResponse({
+        message: 'Successfully unsubscribed from the waitlist',
+      });
+    } catch (error) {
+      return this.handleError(error);
     }
-
-    async handle(request: NextRequest): Promise<Response> {
-        try {
-            return await withTimeout(this.processUnsubscribe(request), 5000);
-        } catch (error) {
-            if (error instanceof Error && error.message.includes('timed out')) {
-                return errors.timeout('Unsubscribe request timed out');
-            }
-            return this.handleError(error);
-        }
-    }
-
-    private async processUnsubscribe(request: NextRequest): Promise<Response> {
-        try {
-            const { email } = await this.validateRequest(request);
-
-            // Find subscriber
-            const subscriber = await this.findSubscriber(email);
-
-            if (!subscriber) {
-                return errors.notFound('Email not found in waitlist');
-            }
-
-            if (subscriber.status === 'REJECTED') {
-                return successResponse<WaitlistResponse>({
-                    status: 'REJECTED',
-                    subscriber: this.formatSubscriber(subscriber)
-                }, 'Email already rejected from waitlist');
-            }
-
-            if (subscriber.status === 'REGISTERED') {
-                return errors.badRequest('Cannot unsubscribe a registered user. Please contact support if you need assistance.');
-            }
-
-            // Update subscriber status
-            const updatedSubscriber = await this.updateSubscriberStatus(email, 'REJECTED');
-
-            // Send unsubscribe confirmation email
-            await this.sendEmail('unsubscribe', email);
-
-            // Log the unsubscribe action
-            await this.logWaitlistActivity(
-                AuditAction.UNSUBSCRIBE,
-                AuditStatus.SUCCESS,
-                email,
-                { action: 'unsubscribe', source: 'api' },
-                request
-            );
-
-            return successResponse<WaitlistResponse>({
-                status: 'REJECTED',
-                subscriber: this.formatSubscriber(updatedSubscriber)
-            }, 'Successfully unsubscribed from waitlist');
-
-        } catch (error) {
-            return this.handleError(error);
-        }
-    }
+  }
 }
 
 const route = new UnsubscribeRoute();

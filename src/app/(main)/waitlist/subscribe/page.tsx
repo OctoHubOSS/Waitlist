@@ -85,7 +85,7 @@ export default function SubscribePage() {
     ];
 
     return (
-        <div className="min-h-screen bg-github-dark flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
             <Toaster position="top-center" />
             <motion.div
                 className="max-w-4xl w-full space-y-12"

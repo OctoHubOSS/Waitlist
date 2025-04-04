@@ -52,18 +52,37 @@ model User {
   email              String              @unique
   emailVerified      DateTime?
   image              String?
+  username           String?             @unique // Unique username for the user
+  displayName        String? // Display name that can be different from name
+  bio                String?             @db.Text // User biography or about text
+  location           String? // User's location
+  website            String? // User's personal website
+  twitter            String? // Twitter handle
+  github             String? // GitHub username
+  company            String? // User's company
+  role               UserRole            @default(USER) // User role for permissions
   password           String?
+  lastSeen           DateTime? // Track when user was last active
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   accounts           Account[]
   sessions           Session[]
   waitlistSubscriber WaitlistSubscriber?
   featureRequests    FeatureRequest[]
+  bugReports         BugReport[]
   comments           Comment[]
   reactions          Reaction[]
   notifications      Notification[]
   responses          Response[]
-  auditLogs          AuditLog[] // Records of user activity
+  auditLogs          AuditLog[]
+  featureRequestTags FeatureRequestTag[]
+  bugReportTags      BugReportTag[]
+}
+
+enum UserRole {
+  ADMIN
+  MODERATOR
+  USER
 }
 
 model WaitlistSubscriber {
@@ -100,21 +119,37 @@ enum WaitlistStatus {
   BOUNCED
 }
 
+// Enhanced Feature Request system
 model FeatureRequest {
-  id          String        @id @default(cuid())
-  title       String
-  description String        @db.Text
-  status      RequestStatus @default(OPEN)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  author      User          @relation(fields: [authorId], references: [id])
-  authorId    String
-  comments    Comment[]
-  reactions   Reaction[]
-  auditLogs   AuditLog[]
+  id            String              @id @default(cuid())
+  title         String
+  description   String              @db.Text
+  status        RequestStatus       @default(OPEN)
+  priority      Priority            @default(MEDIUM)
+  votes         Int                 @default(0)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  targetVersion String?
+  area          String?
+  epic          String?
+  author        User                @relation(fields: [authorId], references: [id])
+  authorId      String
+  comments      Comment[]
+  reactions     Reaction[]
+  auditLogs     AuditLog[]
+  tags          FeatureRequestTag[]
+  attachments   Attachment[]
+  assignees     FeatureAssignee[]
+  related       FeatureRelation[]   @relation("RelatedFrom")
+  relatedTo     FeatureRelation[]   @relation("RelatedTo")
+  duplicates    FeatureRequest[]    @relation("Duplicates")
+  duplicateOf   FeatureRequest?     @relation("Duplicates", fields: [duplicateOfId], references: [id])
+  duplicateOfId String?
 
-  @@index([status])
+  @@index([status, priority])
   @@index([createdAt])
+  @@index([authorId])
+  @@index([duplicateOfId])
 }
 
 enum RequestStatus {
@@ -124,45 +159,216 @@ enum RequestStatus {
   IN_PROGRESS
   COMPLETED
   DECLINED
+  DUPLICATE
+  CLOSED
 }
 
-model Comment {
+// New Bug Report system
+model BugReport {
+  id            String         @id @default(cuid())
+  title         String
+  description   String         @db.Text
+  status        BugStatus      @default(OPEN)
+  priority      Priority       @default(MEDIUM)
+  severity      Severity       @default(MINOR)
+  steps         String?        @db.Text
+  expected      String?        @db.Text
+  actual        String?        @db.Text
+  environment   String?
+  version       String?
+  browser       String?
+  os            String?
+  device        String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  closedAt      DateTime?
+  reopenedAt    DateTime?
+  author        User           @relation(fields: [authorId], references: [id])
+  authorId      String
+  comments      Comment[]
+  reactions     Reaction[]
+  auditLogs     AuditLog[]
+  tags          BugReportTag[]
+  attachments   Attachment[]
+  assignees     BugAssignee[]
+  related       BugRelation[]  @relation("RelatedFrom")
+  relatedTo     BugRelation[]  @relation("RelatedTo")
+  duplicates    BugReport[]    @relation("Duplicates")
+  duplicateOf   BugReport?     @relation("Duplicates", fields: [duplicateOfId], references: [id])
+  duplicateOfId String?
+
+  @@index([status, priority, severity])
+  @@index([createdAt])
+  @@index([authorId])
+  @@index([duplicateOfId])
+}
+
+enum BugStatus {
+  OPEN
+  CONFIRMED
+  IN_PROGRESS
+  FIXED
+  WONT_FIX
+  DUPLICATE
+  CLOSED
+  REOPENED
+  CANT_REPRODUCE
+}
+
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  TRIVIAL
+}
+
+enum Severity {
+  BLOCKER
+  CRITICAL
+  MAJOR
+  MINOR
+  TRIVIAL
+}
+
+enum RelationType {
+  RELATED_TO
+  BLOCKS
+  BLOCKED_BY
+  DUPLICATES
+  DUPLICATED_BY
+  DEPENDS_ON
+  REQUIRED_FOR
+}
+
+// Relationships and auxiliary models
+model FeatureRequestTag {
+  id              String           @id @default(cuid())
+  name            String
+  color           String           @default("#6e7681")
+  description     String?
+  createdAt       DateTime         @default(now())
+  createdBy       User?            @relation(fields: [createdById], references: [id])
+  createdById     String?
+  featureRequests FeatureRequest[]
+
+  @@unique([name])
+  @@index([createdById])
+}
+
+model BugReportTag {
+  id          String      @id @default(cuid())
+  name        String
+  color       String      @default("#6e7681")
+  description String?
+  createdAt   DateTime    @default(now())
+  createdBy   User?       @relation(fields: [createdById], references: [id])
+  createdById String?
+  bugReports  BugReport[]
+
+  @@unique([name])
+  @@index([createdById])
+}
+
+model FeatureAssignee {
   id               String         @id @default(cuid())
-  content          String         @db.Text
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  author           User           @relation(fields: [authorId], references: [id])
-  authorId         String
+  role             String? // Developer, Designer, PM, etc.
   featureRequest   FeatureRequest @relation(fields: [featureRequestId], references: [id], onDelete: Cascade)
   featureRequestId String
-  reactions        Reaction[]
-  auditLogs        AuditLog[]
+  userId           String
+  assignedAt       DateTime       @default(now())
 
-  @@index([featureRequestId])
-  @@index([authorId])
+  @@unique([featureRequestId, userId])
+  @@index([userId])
 }
 
-model Reaction {
+model BugAssignee {
+  id          String    @id @default(cuid())
+  role        String? // Developer, QA, etc.
+  bugReport   BugReport @relation(fields: [bugReportId], references: [id], onDelete: Cascade)
+  bugReportId String
+  userId      String
+  assignedAt  DateTime  @default(now())
+
+  @@unique([bugReportId, userId])
+  @@index([userId])
+}
+
+model FeatureRelation {
+  id            String         @id @default(cuid())
+  type          RelationType
+  fromFeature   FeatureRequest @relation("RelatedFrom", fields: [fromFeatureId], references: [id], onDelete: Cascade)
+  fromFeatureId String
+  toFeature     FeatureRequest @relation("RelatedTo", fields: [toFeatureId], references: [id], onDelete: Cascade)
+  toFeatureId   String
+  createdAt     DateTime       @default(now())
+
+  @@unique([fromFeatureId, toFeatureId, type])
+  @@index([fromFeatureId])
+  @@index([toFeatureId])
+}
+
+model BugRelation {
+  id        String       @id @default(cuid())
+  type      RelationType
+  fromBug   BugReport    @relation("RelatedFrom", fields: [fromBugId], references: [id], onDelete: Cascade)
+  fromBugId String
+  toBug     BugReport    @relation("RelatedTo", fields: [toBugId], references: [id], onDelete: Cascade)
+  toBugId   String
+  createdAt DateTime     @default(now())
+
+  @@unique([fromBugId, toBugId, type])
+  @@index([fromBugId])
+  @@index([toBugId])
+}
+
+model Attachment {
   id               String          @id @default(cuid())
-  type             ReactionType
+  filename         String
+  originalFilename String?
+  filesize         Int
+  mimetype         String
+  url              String
+  thumbnailUrl     String?
+  description      String?
   createdAt        DateTime        @default(now())
-  user             User            @relation(fields: [userId], references: [id])
-  userId           String
   featureRequest   FeatureRequest? @relation(fields: [featureRequestId], references: [id], onDelete: Cascade)
   featureRequestId String?
+  bugReport        BugReport?      @relation(fields: [bugReportId], references: [id], onDelete: Cascade)
+  bugReportId      String?
   comment          Comment?        @relation(fields: [commentId], references: [id], onDelete: Cascade)
   commentId        String?
-  auditLogs        AuditLog[]
 
-  @@unique([userId, featureRequestId, type])
-  @@unique([userId, commentId, type])
-  @@index([featureRequestId, type])
-  @@index([commentId, type])
+  @@index([featureRequestId])
+  @@index([bugReportId])
+  @@index([commentId])
 }
 
-enum ReactionType {
-  LIKE
-  DISLIKE
+// Enhanced Comment model
+model Comment {
+  id               String          @id @default(cuid())
+  content          String          @db.Text
+  isInternal       Boolean         @default(false) // Internal notes not shown to users
+  isDeleted        Boolean         @default(false) // Soft delete
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  author           User            @relation(fields: [authorId], references: [id])
+  authorId         String
+  featureRequest   FeatureRequest? @relation(fields: [featureRequestId], references: [id], onDelete: Cascade)
+  featureRequestId String?
+  bugReport        BugReport?      @relation(fields: [bugReportId], references: [id], onDelete: Cascade)
+  bugReportId      String?
+  reactions        Reaction[]
+  auditLogs        AuditLog[]
+  attachments      Attachment[]
+  parentComment    Comment?        @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  parentCommentId  String?
+  childComments    Comment[]       @relation("CommentReplies")
+
+  @@index([featureRequestId])
+  @@index([bugReportId])
+  @@index([authorId])
+  @@index([parentCommentId])
 }
 
 // Survey system models
@@ -238,7 +444,7 @@ model Notification {
   createdAt    DateTime            @default(now())
   user         User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String?
-  subscriber   WaitlistSubscriber? @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  subscriber   WaitlistSubscriber? @relation(fields: [subscriberId], references: [id])
   subscriberId String?
   auditLogs    AuditLog[]
 
@@ -265,24 +471,22 @@ model Milestone {
   completedAt DateTime?
   progress    Int        @default(0)
   createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  updatedAt   DateTime   @default(now())
   isPublic    Boolean    @default(true)
   auditLogs   AuditLog[]
 }
 
 // Comprehensive Audit Log system
 model AuditLog {
-  id         String         @id @default(cuid())
-  timestamp  DateTime       @default(now())
-  action     AuditLogAction
-  entityType String // The type of entity being acted upon
-  entityId   String // ID of the entity being acted upon
-  oldData    Json? // Previous state (if applicable)
-  newData    Json? // New state (if applicable)
-  ipAddress  String?
-  userAgent  String?        @db.Text
-
-  // Optional relations to specific entities
+  id               String              @id @default(cuid())
+  timestamp        DateTime            @default(now())
+  action           AuditLogAction
+  entityType       String // The type of entity being acted upon
+  entityId         String // ID of the entity being acted upon
+  oldData          Json? // Previous state (if applicable)
+  newData          Json? // New state (if applicable)
+  ipAddress        String?
+  userAgent        String?             @db.Text
   user             User?               @relation(fields: [userId], references: [id])
   userId           String?
   subscriber       WaitlistSubscriber? @relation(fields: [subscriberId], references: [id])
@@ -301,6 +505,8 @@ model AuditLog {
   responseId       String?
   milestone        Milestone?          @relation(fields: [milestoneId], references: [id])
   milestoneId      String?
+  bugReport        BugReport?          @relation(fields: [bugReportId], references: [id])
+  bugReportId      String?
 
   metadata Json? // Additional contextual information
 
@@ -309,6 +515,7 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([userId])
   @@index([subscriberId])
+  @@index([bugReportId])
 }
 
 enum AuditLogAction {
@@ -339,4 +546,54 @@ enum AuditLogAction {
   MILESTONE_CREATED
   MILESTONE_UPDATED
   ADMIN_ACTION
+  BUG_REPORTED
+  BUG_UPDATED
+  BUG_STATUS_CHANGED
+  BUG_CLOSED
+  BUG_REOPENED
+  BUG_ASSIGNED
+  BUG_UNASSIGNED
+  TAG_CREATED
+  TAG_UPDATED
+  TAG_DELETED
+  ITEM_TAGGED
+  ITEM_UNTAGGED
+  FEATURE_PRIORITIZED
+  FEATURE_ASSIGNED
+  FEATURE_UNASSIGNED
+  FEATURE_RELATED
+  FEATURE_UNRELATED
+}
+
+model Reaction {
+  id               String          @id @default(cuid())
+  type             ReactionType
+  createdAt        DateTime        @default(now())
+  user             User            @relation(fields: [userId], references: [id])
+  userId           String
+  featureRequest   FeatureRequest? @relation(fields: [featureRequestId], references: [id], onDelete: Cascade)
+  featureRequestId String?
+  bugReport        BugReport?      @relation(fields: [bugReportId], references: [id], onDelete: Cascade)
+  bugReportId      String?
+  comment          Comment?        @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId        String?
+  auditLogs        AuditLog[]
+
+  @@unique([userId, featureRequestId, type])
+  @@unique([userId, bugReportId, type])
+  @@unique([userId, commentId, type])
+  @@index([featureRequestId, type])
+  @@index([bugReportId, type])
+  @@index([commentId, type])
+}
+
+enum ReactionType {
+  LIKE
+  DISLIKE
+  LAUGH
+  HOORAY
+  CONFUSED
+  HEART
+  ROCKET
+  EYES
 }

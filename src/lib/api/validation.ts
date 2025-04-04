@@ -41,6 +41,11 @@ export const enums = {
     statsPeriod: z.enum(["HOURLY", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"]),
     trendingPeriod: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
     trendingType: z.enum(["USER", "ORGANIZATION", "REPOSITORY"]),
+    waitlistStatus: z.enum(["SUBSCRIBED", "INVITED", "REGISTERED", "REJECTED"]),
+    accountStatus: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED", "DELETED"]),
+    notificationType: z.enum(["EMAIL", "PUSH", "IN_APP"]),
+    notificationPriority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]),
+    auditLogType: z.enum(["USER", "SYSTEM", "SECURITY", "DATA"])
 };
 
 // Common validation schemas

@@ -11,6 +11,7 @@ This library provides a robust foundation for making API requests and managing A
    - [Basic API Requests](#basic-api-requests)
    - [API Routes](#api-routes)
    - [Services](#services)
+   - [Validation](#validation)
    - [Middleware](#middleware)
 5. [Type System](#type-system)
 6. [Error Handling](#error-handling)
@@ -39,6 +40,7 @@ The API library serves as a central system for handling all API-related operatio
 - **Request Timeouts**: Configurable timeouts for all requests
 - **Rate Limiting**: Built-in support for rate limiting
 - **Audit Logging**: Integration with the audit system for security tracking
+- **Domain-Specific Routes**: Specialized route base classes for different domains (waitlist, auth, dashboard, bug reports)
 
 ## Architecture
 
@@ -47,12 +49,19 @@ The API library is organized into several key components:
 - **Client**: For making API requests (`client.ts`)
 - **Types**: Central type definitions (`types.ts`)
 - **Utilities**: Helper functions for API operations (`utils.ts`)
-- **Routes**: Route definitions and handlers (`routes.ts`)
+- **Validation**: Schema validation utilities (`validation.ts`)
+- **Routes**: Route definitions and handlers
+  - **Base Route**: Foundation for all routes (`routes/base.ts`)
+  - **Auth Routes**: Authentication-specific routes (`routes/auth`)
+  - **Waitlist Routes**: Waitlist-specific routes (`routes/waitlist`) 
+  - **Dashboard Routes**: Dashboard-specific routes (`routes/dashboard`)
+  - **Bug Reports Routes**: Bug reporting features (`routes/bug-reports`)
 - **Services**: Service-oriented APIs (`services.ts`)
 - **Middleware**: Request/response interceptors (`middleware.ts`)
 - **Configuration**: Environment-specific config (`config.ts`)
 - **Constants**: API-related constants (`constants.ts`)
-- **IP Utilities**: Tools for client IP detection (`ip.ts`)
+- **Endpoints**: API endpoint definitions (`endpoints.ts`)
+- **Responses**: Standardized API responses (`responses.ts`)
 
 ## Usage Examples
 
@@ -61,7 +70,7 @@ The API library is organized into several key components:
 Making a simple GET request:
 
 ```typescript
-import { createApiClient } from '@/lib/api/client';
+import { createApiClient } from '@/lib/api';
 
 // Create client instance
 const apiClient = createApiClient({
@@ -101,13 +110,13 @@ const response = await apiClient.get('/dashboard', undefined, {
 
 ### API Routes
 
-Creating an API route:
+Creating an API route using the base route class:
 
 ```typescript
 import { BaseApiRoute } from '@/lib/api/routes';
 import { z } from 'zod';
 import { NextRequest } from 'next/server';
-import { successResponse, errors } from '@/lib/api/responses';
+import { responses } from '@/lib/api/responses';
 
 // Define request schema
 const createUserSchema = z.object({
@@ -127,7 +136,7 @@ class CreateUserRoute extends BaseApiRoute<z.infer<typeof createUserSchema>> {
       // Process the request...
       const user = await createUser(email, name);
       
-      return successResponse({
+      return responses.success({
         id: user.id,
         email: user.email,
         name: user.name,
@@ -142,7 +151,83 @@ class CreateUserRoute extends BaseApiRoute<z.infer<typeof createUserSchema>> {
 const route = new CreateUserRoute();
 
 // Export handler methods
-export const POST = route.handle.bind(route);
+export const POST = route.bindToMethod('POST');
+```
+
+Using specialized route classes:
+
+```typescript
+import { BaseWaitlistRoute } from '@/lib/api/routes';
+import { z } from 'zod';
+import { NextRequest } from 'next/server';
+import { responses } from '@/lib/api/responses';
+import { AuditAction, AuditStatus } from '@/types/auditLogs';
+
+// Define schema
+const subscribeSchema = z.object({
+  email: z.string().email(),
+  name: z.string().optional(),
+});
+
+class SubscribeRoute extends BaseWaitlistRoute<z.infer<typeof subscribeSchema>> {
+  constructor() {
+    super(subscribeSchema);
+  }
+
+  async handle(request: NextRequest): Promise<Response> {
+    try {
+      const { email, name } = await this.validateRequest(request);
+      
+      // Check if already subscribed
+      const existing = await this.findSubscriber(email);
+      
+      if (existing) {
+        // Update existing subscriber
+        const updated = await this.updateSubscriberStatus(email, 'SUBSCRIBED');
+        
+        // Log the activity
+        await this.logWaitlistActivity({
+          action: AuditAction.WAITLIST_RESUBSCRIBED,
+          status: AuditStatus.SUCCESS,
+          email,
+          request
+        });
+        
+        return responses.success({
+          status: 'SUBSCRIBED',
+          subscriber: this.formatSubscriber(updated)
+        });
+      }
+      
+      // Create new subscriber
+      const subscriber = await this.createSubscriber(email, name);
+      
+      // Send confirmation email
+      await this.sendEmail('confirmation', email);
+      
+      // Log the activity
+      await this.logWaitlistActivity({
+        action: AuditAction.WAITLIST_SUBSCRIBED,
+        status: AuditStatus.SUCCESS,
+        email,
+        request
+      });
+      
+      return responses.created({
+        status: 'SUBSCRIBED',
+        subscriber: this.formatSubscriber(subscriber)
+      });
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+}
+
+// Create route instance
+const route = new SubscribeRoute();
+
+// Export handler methods
+export const POST = route.bindToMethod('POST');
 ```
 
 ### Services
@@ -150,31 +235,69 @@ export const POST = route.handle.bind(route);
 Using service classes for domain-specific API operations:
 
 ```typescript
-import { createApiService, UserService } from '@/lib/api/services';
+import { createApiService, UserService, WaitlistService } from '@/lib/api';
 import { getApiConfig } from '@/lib/api/config';
 
-// Create service instance
+// Create service instances
 const userService = createApiService(UserService, getApiConfig());
+const waitlistService = createApiService(WaitlistService, getApiConfig());
 
-// Use the service
-const response = await userService.getUser('123');
-if (response.success) {
-  const user = response.data;
+// Use the user service
+const userResponse = await userService.getUser('123');
+if (userResponse.success) {
+  const user = userResponse.data;
   console.log(`Hello, ${user.name}!`);
+}
+
+// Use the waitlist service
+const subscribeResponse = await waitlistService.subscribe({
+  email: 'user@example.com',
+  name: 'New User'
+});
+```
+
+### Validation
+
+Validating data with schemas:
+
+```typescript
+import { validate, schemas, requestSchemas } from '@/lib/api/validation';
+import { NextRequest } from 'next/server';
+
+// Validate with predefined schema
+const result = validate(requestSchemas.subscribe, {
+  email: 'user@example.com',
+  name: 'John Doe'
+});
+
+if (result.success) {
+  const validData = result.data;
+  // Process validated data
+} else {
+  console.error('Validation failed:', result.error);
+}
+
+// Validate request body
+async function validateRequestBody(req: NextRequest) {
+  const result = await validateBody(req, requestSchemas.login);
+  return result;
 }
 ```
 
 ### Middleware
 
-Using middleware:
+Using API middleware:
 
 ```typescript
 import { 
   validateRequest, 
   requireAuth, 
-  rateLimit 
+  rateLimit,
+  cors,
+  errorHandler
 } from '@/lib/api/middleware';
 import { z } from 'zod';
+import { createApiRoute } from '@/lib/api/routes';
 
 // Schema for validation
 const userSchema = z.object({
@@ -182,13 +305,18 @@ const userSchema = z.object({
   email: z.string().email(),
 });
 
-// Apply middleware to route
-router.addRoute(
-  createApiRoute('/api/users', 'POST', handler)
-    .addMiddleware(validateRequest(userSchema))
-    .addMiddleware(requireAuth())
-    .addMiddleware(rateLimit({ limit: 10 }))
-);
+// Create a route with middleware
+const route = createApiRoute('/api/users', 'POST', async (req, res) => {
+  // Handler implementation
+  return { success: true, data: { message: 'User created' } };
+});
+
+// Apply middleware
+route.addMiddleware(cors());
+route.addMiddleware(validateRequest(userSchema));
+route.addMiddleware(requireAuth());
+route.addMiddleware(rateLimit({ limit: 10 }));
+route.addMiddleware(errorHandler());
 ```
 
 ## Type System
@@ -201,15 +329,13 @@ The API library uses TypeScript for complete type safety. Key types include:
 - `ApiClient`: Interface for making API requests
 - `ApiRoute`: Definition of an API route
 - `ApiMiddleware`: Request/response interceptors
+- `ValidationResult<T>`: Result of schema validation
+- `WaitlistStatus`: Enum of possible waitlist statuses
 
 Example of typed responses:
 
 ```typescript
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+import { ApiResponse, User } from '@/lib/api/types';
 
 // Typed response
 const response: ApiResponse<User> = await apiClient.get('/users/123');
@@ -245,15 +371,29 @@ try {
 }
 ```
 
+Using the error formatting utility:
+
+```typescript
+import { formatApiError } from '@/lib/api';
+
+// Format error for display
+const errorMessage = formatApiError(response.error);
+showErrorToast(errorMessage);
+```
+
 ## Configuration
 
 Create custom configurations:
 
 ```typescript
-import { createApiConfig, createServerApiConfig } from '@/lib/api/config';
+import { 
+  createApiConfig, 
+  createServerApiConfig, 
+  createClientApiConfig 
+} from '@/lib/api/config';
 
 // Client-side config
-const clientConfig = createApiConfig({
+const clientConfig = createClientApiConfig({
   timeout: 10000,
   retries: 2,
   headers: {
@@ -266,6 +406,9 @@ const serverConfig = createServerApiConfig({
   timeout: 30000,
   useSession: false,
 });
+
+// Environment-specific config
+const config = getApiConfig(); // Returns development, production, or test config
 ```
 
 ## Best Practices
@@ -280,3 +423,8 @@ const serverConfig = createServerApiConfig({
 8. **Test API Routes**: Write tests that cover route handlers
 9. **Document API Endpoints**: Document expected inputs, outputs, and errors
 10. **Secure Routes**: Apply authentication middleware where needed
+11. **Use Route Base Classes**: Extend from the appropriate base route class for domain-specific functionality
+12. **Standardize Responses**: Use the responses utility for consistent API responses
+13. **Include Pagination**: Implement proper pagination for list endpoints
+14. **Validate Route Parameters**: Use Zod to validate URL and query parameters
+15. **Enable CORS Appropriately**: Configure CORS middleware for cross-domain requests

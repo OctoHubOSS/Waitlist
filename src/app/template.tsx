@@ -8,7 +8,7 @@ export default function Template({
     return (
         <>
             <div className="flex flex-col min-h-screen">
-                <main className="w-full flex-grow mt-20">
+                <main className="w-full flex-grow">
                     {children}
                 </main>
             </div>

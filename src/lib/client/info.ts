@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { ExtendedNextRequest } from '@/types/apiClient';
-import { absoluteUrl } from '@/utils/urlBuilder/absoluteUrl';
+import { absoluteUrl } from '@/utils/urlBuilder';
 
 import { 
     parseUserAgent,
@@ -18,7 +18,8 @@ import {
 } from './ip';
 
 /**
- * Client information interface
+ * Client information interface - defined in the client module for direct use
+ * Note: If shared across modules, this should be moved to @/types
  */
 export interface ClientInfo {
     ip: string;
@@ -113,53 +114,7 @@ export class ClientInfoService {
      */
     static getIp(request: NextRequest | any): string {
         // Use our enhanced IP detection function
-        const ip = getClientIp(request);
-        
-        // If we got a valid IP, return it
-        if (ip !== 'unknown') return ip;
-        
-        // Special handling for Vercel and Next.js edge environments
-        if (request) {
-            try {
-                // For App Router + Edge Runtime - TypeScript friendly approach
-                const req = request as ExtendedNextRequest;
-                if (req.ip) {
-                    return req.ip;
-                }
-                
-                // Try getting Vercel forwarded-for headers
-                if (request.headers) {
-                    if (typeof request.headers.get === 'function') {
-                        const vercelIp = request.headers.get('x-vercel-forwarded-for');
-                        if (vercelIp) {
-                            const firstIp = vercelIp.split(',')[0].trim();
-                            if (firstIp) return firstIp;
-                        }
-                    } else if (typeof request.headers === 'object') {
-                        // For Pages Router or plain header objects
-                        const headerKeys = Object.keys(request.headers).map(k => k.toLowerCase());
-                        const vercelKey = headerKeys.find(k => k === 'x-vercel-forwarded-for');
-                        const forwardedKey = headerKeys.find(k => k === 'x-forwarded-for');
-                        
-                        if (vercelKey && request.headers[vercelKey]) {
-                            const ipString = String(request.headers[vercelKey]);
-                            const firstIp = ipString.split(',')[0].trim();
-                            if (firstIp) return firstIp;
-                        }
-                        
-                        if (forwardedKey && request.headers[forwardedKey]) {
-                            const ipString = String(request.headers[forwardedKey]);
-                            const firstIp = ipString.split(',')[0].trim();
-                            if (firstIp) return firstIp;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.warn('Error extracting IP from headers:', error);
-            }
-        }
-        
-        return 'unknown';
+        return getClientIp(request);
     }
     
     /**
@@ -181,8 +136,18 @@ export class ClientInfoService {
         ];
         
         for (const source of possibleSources) {
-            if (source) return source;
+            if (source) return String(source);
         }
+        
+        // Try to get the user agent from NextRequest headers
+        if (request.headers instanceof Headers) {
+            const ua = request.headers.get('user-agent');
+            if (ua) return ua;
+        }
+        
+        // Last resort - check if there's a ua or useragent property
+        if (request.ua) return String(request.ua);
+        if (request.userAgent) return String(request.userAgent);
         
         return 'unknown';
     }
@@ -451,3 +416,6 @@ export class ClientInfoService {
 
 // Export a singleton instance for direct use
 export const clientInfo = ClientInfoService;
+
+// Export the main function for easy access
+export const getClientInfo = ClientInfoService.getClientInfo.bind(ClientInfoService);

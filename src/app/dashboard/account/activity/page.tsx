@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth/config';
-import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
+import { ActivityList } from '@/components/dashboard/account/ActivityList';
 
 async function getActivityData() {
     const session = await getServerSession(authOptions);
@@ -9,17 +9,33 @@ async function getActivityData() {
         redirect('/auth/login');
     }
 
-    const response = await fetch(`/api/dashboard/activity`, {
-        headers: {
-            'X-User-Email': session.user.email,
-        },
-    });
-
-    if (!response.ok) {
-        throw new Error('Failed to fetch activity');
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/dashboard/activity?page=1&pageSize=20`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch activity data');
+        }
+        
+        const data = await response.json();
+        return data.data;
+    } catch (error) {
+        console.error('Activity data fetch error:', error);
+        // Return empty data to prevent UI crashes
+        return {
+            activities: [],
+            pagination: {
+                total: 0,
+                page: 1,
+                pageSize: 20,
+                hasMore: false
+            }
+        };
     }
-
-    return response.json();
 }
 
 export default async function ActivityPage() {
@@ -28,13 +44,16 @@ export default async function ActivityPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-white">Activity</h1>
+                <h1 className="text-2xl font-bold text-white">Activity Log</h1>
                 <p className="mt-1 text-sm text-github-text-secondary">
-                    View your recent account activity
+                    View your recent account activity and login history
                 </p>
             </div>
 
-            <ActivityFeed activities={data.activities} />
+            <ActivityList 
+                initialActivities={data.activities} 
+                initialPagination={data.pagination} 
+            />
         </div>
     );
-} 
+}

@@ -1,9 +1,11 @@
 import { NextRequest } from 'next/server';
 import { ApiMiddleware, ApiRequest, ApiResponse } from './types';
-import { AuditLogger, AuditAction, AuditStatus } from '@/lib/audit/logger';
+import { AuditLogger } from '@/lib/audit/logger';
+import { AuditAction, AuditStatus } from "@/types/auditLogs";
 import { getClientIp } from '../client/ip';
 import { z } from 'zod';
 import { ERROR_CODES, ERROR_MESSAGES, RATE_LIMITS, HTTP_METHODS } from './constants';
+import { parseUserAgent } from '@/lib/utils/user-agent';
 
 /**
  * Middleware to validate request body against a schema
@@ -43,6 +45,81 @@ export function validateRequest(schema: z.ZodType<any>): ApiMiddleware {
 }
 
 /**
+ * Extract information for audit logs
+ */
+function extractRequestInfoForAudit(req: ApiRequest): Record<string, any> {
+    // Get basic request properties
+    const info: Record<string, any> = {
+        path: req.path,
+        method: req.method,
+        params: req.params || {},
+        timestamp: new Date().toISOString()
+    };
+    
+    // Extract IP with multiple fallbacks
+    info.ip = extractRequestIp(req);
+    
+    // Extract headers (avoid sensitive ones)
+    info.headers = {};
+    if (req.headers) {
+        const safeHeaders = [
+            'user-agent',
+            'referer',
+            'origin',
+            'x-forwarded-for',
+            'cf-connecting-ip',
+            'true-client-ip',
+            'x-real-ip',
+            'content-type',
+            'accept',
+            'accept-language'
+        ];
+        
+        // Fix for "Type 'never' has no call signatures" error
+        if (req.headers && typeof req.headers === 'object') {
+            const headerObj = req.headers as any;
+            
+            if (headerObj.get && typeof headerObj.get === 'function') {
+                // Headers instance with get method
+                for (const header of safeHeaders) {
+                    try {
+                        const value = headerObj.get(header);
+                        if (value) {
+                            info.headers[header] = value;
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to get header ${header}:`, e);
+                    }
+                }
+            } else {
+                // Plain headers object - no get method
+                for (const header of safeHeaders) {
+                    const value = headerObj[header] ||
+                                 headerObj[header.toLowerCase()] ||
+                                 headerObj[header.toUpperCase()];
+                    if (value) {
+                        info.headers[header] = Array.isArray(value) ? value[0] : value;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Extract user agent and parse it
+    const userAgent = extractUserAgent(req);
+    info.userAgent = userAgent;
+    
+    if (userAgent && userAgent !== 'unknown') {
+        const { browser, os, device } = parseUserAgent(userAgent);
+        info.browser = browser;
+        info.os = os;
+        info.device = device;
+    }
+    
+    return info;
+}
+
+/**
  * Middleware to log API requests
  */
 export function logRequest(level: AuditAction = AuditAction.SYSTEM_WARNING): ApiMiddleware {
@@ -63,22 +140,99 @@ export function logRequest(level: AuditAction = AuditAction.SYSTEM_WARNING): Api
             const duration = Date.now() - start;
             const status = res.success ? AuditStatus.SUCCESS : AuditStatus.FAILURE;
             
-            await AuditLogger.logSystem(
-                level,
-                status,
-                {
-                    requestId,
-                    path: req.path,
-                    method: req.method,
-                    duration,
-                    ip: getClientIp(req as any),
-                    status: res.success ? 200 : 400,
-                    params: req.params,
-                    error: !res.success ? res.error : undefined
-                }
-            );
+            // Extract detailed request info for audit log
+            const requestInfo = extractRequestInfoForAudit(req);
+            
+            // Create a properly structured object for logging
+            const auditDetails = {
+                requestId,
+                duration,
+                status: res.success ? 200 : (res.error?.statusCode || 400),
+                error: !res.success ? res.error : undefined,
+                requestInfo
+            };
+            
+            // Don't try to call AuditLogger.logSystem directly with the request
+            try {
+                // We're just calling the function here, not awaiting it
+                AuditLogger.logSystem(level, status, auditDetails);
+            } catch (logError) {
+                console.error('Failed to log request:', logError);
+            }
         }
     };
+}
+
+/**
+ * Extract IP address from request with fallbacks
+ */
+function extractRequestIp(req: any): string {
+    // Try direct IP property first
+    if (req.ip && isValidIp(req.ip)) return req.ip;
+    
+    // Try getting from headers
+    const ipHeaders = [
+        'x-vercel-forwarded-for',
+        'cf-connecting-ip',
+        'x-forwarded-for',
+        'true-client-ip',
+        'x-real-ip'
+    ];
+    
+    for (const header of ipHeaders) {
+        const headerValue = getHeaderValue(req, header);
+        if (headerValue) {
+            const ip = header.includes('forwarded-for') 
+                ? headerValue.split(',')[0].trim() 
+                : headerValue;
+            if (isValidIp(ip)) return ip;
+        }
+    }
+    
+    return 'unknown';
+}
+
+/**
+ * Extract user agent from request
+ */
+function extractUserAgent(req: any): string {
+    return getHeaderValue(req, 'user-agent') || 'unknown';
+}
+
+/**
+ * Helper to get header value from various request objects
+ */
+function getHeaderValue(req: any, name: string): string | null {
+    // Check if headers object has get method (like NextRequest)
+    if (req.headers && typeof req.headers.get === 'function') {
+        return req.headers.get(name);
+    }
+    
+    // Check headers object directly
+    if (req.headers && typeof req.headers === 'object') {
+        const value = req.headers[name] || req.headers[name.toLowerCase()] || req.headers[name.toUpperCase()];
+        return value ? String(value) : null;
+    }
+    
+    // Check if request has get method (like Express)
+    if (typeof req.get === 'function') {
+        try {
+            return req.get(name) || null;
+        } catch {
+            // Ignore errors
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Determine if string is valid IP
+ */
+function isValidIp(ip: string): boolean {
+    // Simple IP validation (IPv4 and some IPv6)
+    return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip) || 
+        /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/.test(ip);
 }
 
 /**
@@ -122,29 +276,28 @@ export function rateLimit(options: {
         process.on('SIGTERM', () => clearInterval(cleanupInterval));
         process.on('SIGINT', () => clearInterval(cleanupInterval));
     }
-
+    
     return async (req: ApiRequest, res: ApiResponse, next: () => Promise<void>) => {
         const key = keyGenerator(req);
         const now = Date.now();
         const windowStart = now - windowMs;
-
+        
         // Get existing requests for this key
         const keyRequests = requests.get(key) || [];
-
+        
         // Remove old requests
         const recentRequests = keyRequests.filter(time => time > windowStart);
-
+        
         // Check if rate limit is exceeded
         if (recentRequests.length >= limit) {
             res.success = false;
             res.error = {
                 code: ERROR_CODES.RATE_LIMIT_EXCEEDED,
-                message,
+                message
             };
             
             if (headers) {
                 const resetTime = Math.ceil((windowStart + windowMs) / 1000);
-                
                 (res as any).headers = {
                     ...(res as any).headers || {},
                     'Retry-After': Math.ceil(windowMs / 1000).toString(),
@@ -153,10 +306,9 @@ export function rateLimit(options: {
                     'X-RateLimit-Reset': resetTime.toString()
                 };
             }
-            
             return;
         }
-
+        
         // Add current request
         recentRequests.push(now);
         requests.set(key, recentRequests);
@@ -173,7 +325,7 @@ export function rateLimit(options: {
                 'X-RateLimit-Reset': resetTime.toString()
             };
         }
-
+        
         await next();
     };
 }
@@ -200,7 +352,7 @@ export function requireAuth(options: {
             };
             return;
         }
-
+        
         await next();
     };
 }
@@ -276,7 +428,7 @@ export function cors(options: {
             res.success = true;
             return;
         }
-
+        
         await next();
     };
 }
@@ -308,18 +460,27 @@ export function errorHandler(): ApiMiddleware {
                 };
             }
             
-            // Log the error
-            await AuditLogger.logSystem(
-                AuditAction.SYSTEM_ERROR,
-                AuditStatus.FAILURE,
-                {
-                    path: req.path,
-                    method: req.method,
-                    error: error instanceof Error ? 
-                        { message: error.message, stack: error.stack } : 
-                        String(error)
-                }
-            );
+            // Create error details instead of passing the request directly
+            const errorDetails = {
+                path: req.path,
+                method: req.method,
+                ip: extractRequestIp(req),
+                userAgent: extractUserAgent(req),
+                error: error instanceof Error ? 
+                    { message: error.message, stack: error.stack } : 
+                    String(error)
+            };
+            
+            // Fix: Just call the function without awaiting it
+            try {
+                AuditLogger.logSystem(
+                    AuditAction.SYSTEM_ERROR,
+                    AuditStatus.FAILURE,
+                    errorDetails
+                );
+            } catch (logError) {
+                console.error('Failed to log error:', logError);
+            }
         }
     };
 }

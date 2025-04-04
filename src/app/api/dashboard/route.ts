@@ -1,125 +1,120 @@
 import { NextRequest } from 'next/server';
-import { z } from 'zod';
-import { BaseAuthRoute } from '@/lib/api/routes/auth/base';
+import { BaseDashboardRoute } from '@/lib/api/routes/dashboard/base';
 import { successResponse, errors } from '@/lib/api/responses';
 import prisma from '@/lib/database';
-import { RequestStatus } from '@prisma/client';
-import { AuditAction, AuditStatus } from '@/lib/audit/logger';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { withTimeout } from '@/lib/api/utils';
+import { AuditAction, AuditStatus } from '@/types/auditLogs';
 
-const dashboardResponseSchema = z.object({
-    user: z.object({
-        name: z.string(),
-        email: z.string(),
-        displayName: z.string().nullable(),
-        createdAt: z.string(),
-    }),
-    waitlistPosition: z.number(),
-    featureRequestsCount: z.number(),
-    unreadNotificationsCount: z.number(),
-    recentActivity: z.array(z.object({
-        id: z.string(),
-        action: z.string(),
-        status: z.string(),
-        details: z.any(),
-        createdAt: z.string(),
-    })),
-});
-
-class DashboardRoute extends BaseAuthRoute<void, z.infer<typeof dashboardResponseSchema>> {
+class DashboardRoute extends BaseDashboardRoute {
     constructor() {
-        super(z.void());
+        super();
     }
 
     async handle(request: NextRequest): Promise<Response> {
         try {
-            // Use timeout for database operations to prevent long-running requests
-            return await withTimeout(this.processRequest(request), 10000);
+            return await withTimeout(this.getDashboardOverview(request), 5000);
         } catch (error) {
             if (error instanceof Error && error.message.includes('timed out')) {
-                return errors.timeout('Dashboard data request timed out');
+                return errors.timeout('Dashboard request timed out');
             }
             return this.handleError(error);
         }
     }
 
-    private async processRequest(request: NextRequest): Promise<Response> {
+    private async getDashboardOverview(request: NextRequest): Promise<Response> {
         try {
             const session = await getServerSession(authOptions);
-            if (!session?.user?.email) {
-                return errors.unauthorized('You must be logged in to view dashboard');
+            if (!session?.user?.id) {
+                return errors.unauthorized('You must be logged in to access the dashboard');
             }
 
-            const user = await prisma.user.findUnique({
-                where: { email: session.user.email },
-                include: {
-                    subscriber: true,
-                    featureRequests: {
-                        where: { status: RequestStatus.OPEN },
-                        take: 5
-                    },
-                    notifications: {
-                        where: { isRead: false },
-                        take: 5
-                    },
-                    auditLogs: {
-                        orderBy: { createdAt: 'desc' },
-                        take: 10
-                    }
-                }
-            });
+            const userId = session.user.id;
 
-            if (!user) {
-                return errors.notFound('User not found');
-            }
+            // Get dashboard stats (using our base class method)
+            const stats = await this.getDashboardStats(userId);
 
-            // Calculate waitlist position
-            const waitlistPosition = await prisma.waitlistSubscriber.count({
+            // Get user's recent activity
+            const recentActivity = await this.getUserRecentActivity(userId, 5);
+
+            // Get unread notifications count
+            const unreadNotifications = await prisma.notification.count({
                 where: {
-                    createdAt: {
-                        lt: user.subscriber?.createdAt || new Date(),
-                    },
-                },
+                    userId,
+                    isRead: false
+                }
             });
 
-            // Log dashboard access
-            await this.logAuthAction(
-                AuditAction.LOGIN,
-                AuditStatus.SUCCESS,
-                user.id,
-                user.email,
-                {
-                    clientInfo: {
-                        ip: getClientIp(request),
-                        userAgent: request.headers.get('user-agent'),
-                        referer: request.headers.get('referer'),
-                        origin: request.headers.get('origin')
+            // Get recent bug reports
+            const recentBugReports = await prisma.bugReport.findMany({
+                where: {},
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+                include: {
+                    author: {
+                        select: {
+                            name: true
+                        }
+                    },
+                    _count: {
+                        select: {
+                            comments: true
+                        }
                     }
                 }
+            });
+
+            // Get recent feature requests
+            const recentFeatureRequests = await prisma.featureRequest.findMany({
+                where: {},
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+                include: {
+                    author: {
+                        select: {
+                            name: true
+                        }
+                    },
+                    _count: {
+                        select: {
+                            comments: true
+                        }
+                    }
+                }
+            });
+
+            // Log this dashboard access
+            await this.logDashboardActivity(
+                AuditAction.ADMIN_ACTION,
+                AuditStatus.SUCCESS,
+                userId,
+                { action: 'view_dashboard' },
+                request
             );
 
-            const response = {
-                user: {
-                    name: user.name,
-                    email: user.email,
-                    displayName: user.displayName,
-                    createdAt: user.createdAt.toISOString(),
-                },
-                waitlistPosition: waitlistPosition + 1,
-                featureRequestsCount: user.featureRequests.length,
-                unreadNotificationsCount: user.notifications.length,
-                recentActivity: user.auditLogs.map(log => ({
-                    id: log.id,
-                    action: log.action,
-                    status: log.status,
-                    details: log.details,
-                    createdAt: log.createdAt.toISOString(),
+            return successResponse({
+                stats,
+                recentActivity,
+                unreadNotifications,
+                recentBugReports: recentBugReports.map(report => ({
+                    id: report.id,
+                    title: report.title,
+                    status: report.status,
+                    severity: report.severity,
+                    createdAt: report.createdAt.toISOString(),
+                    authorName: report.author.name,
+                    comments: report._count.comments
                 })),
-            };
-
-            return successResponse(response);
+                recentFeatureRequests: recentFeatureRequests.map(request => ({
+                    id: request.id,
+                    title: request.title,
+                    status: request.status,
+                    createdAt: request.createdAt.toISOString(),
+                    authorName: request.author.name,
+                    comments: request._count.comments
+                }))
+            });
         } catch (error) {
             return this.handleError(error);
         }

@@ -5,17 +5,23 @@ import { successResponse, errors } from '@/lib/api/responses';
 import { AuditAction, AuditStatus } from '@/types/auditLogs';
 import { withTimeout } from '@/lib/api/utils';
 import prisma from '@/lib/database';
-import { verifyPassword } from '@/lib/auth/server/password';
-import { signJwtToken } from '@/lib/auth/server/jwt';
+import { appUrl } from '@/utils/urlBuilder';
+import { comparePasswords } from '@/lib/auth/server/password';
 
-// Login request schema
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   rememberMe: z.boolean().optional().default(false)
 });
 
-class LoginRoute extends BaseAuthRoute<z.infer<typeof loginSchema>> {
+
+type LoginRequestData = {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+};
+
+class LoginRoute extends BaseAuthRoute<LoginRequestData> {
   constructor() {
     super(loginSchema);
   }
@@ -53,15 +59,15 @@ class LoginRoute extends BaseAuthRoute<z.infer<typeof loginSchema>> {
       });
 
       // If user doesn't exist or password doesn't match
-      if (!user || !(await verifyPassword(password, user.password))) {
-        // Log failed login attempt
+      if (!user || !(await comparePasswords(password, user.password))) {
+        // Log failed login attempt - pass the full request object
         await this.logAuthAction(
           AuditAction.LOGIN,
           AuditStatus.FAILURE,
           user?.id, // Only log user ID if user exists
           email,
           { reason: !user ? 'user_not_found' : 'invalid_password' },
-          request
+          request  // Pass the full request object
         );
 
         return errors.unauthorized('Invalid email or password');
@@ -69,6 +75,7 @@ class LoginRoute extends BaseAuthRoute<z.infer<typeof loginSchema>> {
 
       // Check if email is verified
       if (!user.emailVerified) {
+        // Log verification needed - pass the full request object
         await this.logAuthAction(
           AuditAction.LOGIN,
           AuditStatus.FAILURE,
@@ -77,11 +84,11 @@ class LoginRoute extends BaseAuthRoute<z.infer<typeof loginSchema>> {
           { reason: 'email_not_verified' },
           request
         );
-
-        return errors.forbidden('Please verify your email before logging in', {
-          code: 'EMAIL_NOT_VERIFIED',
-          redirectTo: `/auth/verify-email?email=${encodeURIComponent(email)}`
-        });
+        
+        // Use appUrl from our URL builder for the redirect
+        const verifyEmailUrl = appUrl('/auth/verify-email', { email: encodeURIComponent(email) });
+        
+        return errors.forbidden('Please verify your email before logging in');
       }
 
       // Check if account is active
@@ -97,14 +104,30 @@ class LoginRoute extends BaseAuthRoute<z.infer<typeof loginSchema>> {
 
         return errors.forbidden('Your account is not active');
       }
+      
+      // Check if 2FA is enabled
+      if (user.twoFactorEnabled) {
+        // Log 2FA required
+        await this.logAuthAction(
+          AuditAction.LOGIN,
+          AuditStatus.SUCCESS,
+          user.id,
+          email,
+          { stage: '2fa_required' },
+          request
+        );
+        
+        return successResponse({
+          requiresTwoFactor: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            displayName: user.displayName
+          }
+        });
+      }
 
-      // Generate session token
-      const token = await signJwtToken({
-        userId: user.id,
-        email: user.email
-      }, rememberMe ? '30d' : '24h');
-
-      // Log successful login
       await this.logAuthAction(
         AuditAction.LOGIN,
         AuditStatus.SUCCESS,
@@ -114,7 +137,6 @@ class LoginRoute extends BaseAuthRoute<z.infer<typeof loginSchema>> {
         request
       );
 
-      // Return success with user data
       return successResponse({
         user: {
           id: user.id,
@@ -123,8 +145,7 @@ class LoginRoute extends BaseAuthRoute<z.infer<typeof loginSchema>> {
           displayName: user.displayName,
           role: user.role,
           twoFactorEnabled: user.twoFactorEnabled
-        },
-        token
+        }
       });
     } catch (error) {
       return this.handleError(error);

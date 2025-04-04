@@ -10,6 +10,7 @@ const profileSchema = z.object({
     name: schemas.name,
     displayName: schemas.displayName,
     email: schemas.email,
+    username: schemas.username // Added username
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -20,6 +21,7 @@ interface ProfileSectionProps {
         name: string;
         email: string;
         displayName: string | null;
+        username: string | null; // Added username
         createdAt: string;
     };
 }
@@ -34,6 +36,7 @@ export function ProfileSection({ user }: ProfileSectionProps) {
         name: user.name,
         displayName: user.displayName || '',
         email: user.email,
+        username: user.username || '', // Initialize username
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -107,6 +110,20 @@ export function ProfileSection({ user }: ProfileSectionProps) {
                         />
                     </div>
 
+                     <div>
+                        <label htmlFor="username" className="block text-sm font-medium text-github-text-secondary mb-1">
+                            Username
+                        </label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            value={formData.username}
+                            onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                            className="w-full px-3 py-2 bg-github-dark-secondary border border-github-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-github-accent focus:border-transparent"
+                        />
+                    </div>
+
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-github-text-secondary mb-1">
                             Email
@@ -143,4 +160,4 @@ export function ProfileSection({ user }: ProfileSectionProps) {
             </div>
         </div>
     );
-} 
+}

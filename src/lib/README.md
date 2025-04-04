@@ -12,6 +12,7 @@ This directory contains the core libraries that power the OctoHub Waitlist appli
 - [Database Access Layer](#database-access-layer)
 - [Authentication Utilities](#authentication-utilities)
 - [Email System](#email-system)
+- [API Routes System](#api-routes-system)
 - [Utilities](#utilities)
 - [Best Practices](#best-practices)
 
@@ -45,6 +46,8 @@ src/lib/
 │   └── routes/        # Route implementations
 │       ├── auth/      # Authentication routes
 │       ├── waitlist/  # Waitlist routes
+│       ├── bug-reports/ # Bug report routes
+│       ├── dashboard/ # Dashboard routes
 │       └── base.ts    # Base route class
 ├── audit/             # Audit logging system
 │   └── logger.ts      # Audit logger implementation
@@ -265,6 +268,36 @@ const result = await emailClient.sendEmail({
   },
   ...emailClient.emailTemplates.waitlistConfirmation(user.email)
 });
+```
+
+## API Routes System
+
+The API routes system provides a robust foundation for building API endpoints with various features:
+
+### Base Route Classes
+
+- **BaseApiRoute**: Core functionality for all API routes (validation, error handling, etc.)
+- **BaseAuthRoute**: Authentication-specific routes with user verification
+- **BaseWaitlistRoute**: Specialized handling for waitlist operations
+- **BaseBugReportRoute**: Functionality for bug reporting and tracking
+- **BaseDashboardRoute**: Dashboard data operations and user activity
+
+### Usage Example
+
+```typescript
+import { BaseBugReportRoute } from '@/lib/api/routes/bug-reports/base';
+
+class MyBugReportRoute extends BaseBugReportRoute {
+  constructor() {
+    super(myValidationSchema);
+  }
+  
+  async handle(request: NextRequest): Promise<Response> {
+    // Your implementation here
+    const bugReport = await this.findBugReportWithDetails(id, userId);
+    return successResponse(this.formatBugReportResponse(bugReport, true));
+  }
+}
 ```
 
 ## Utilities

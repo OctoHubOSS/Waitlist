@@ -194,6 +194,8 @@ export type WaitlistStatus = 'SUBSCRIBED' | 'INVITED' | 'REGISTERED' | 'REJECTED
 export interface SubscribeRequest {
     email: string;
     name?: string;
+    source?: string;
+    metadata?: Record<string, any>;
 }
 
 export interface UnsubscribeRequest {
@@ -203,6 +205,8 @@ export interface UnsubscribeRequest {
 export interface WaitlistResponse {
     status: WaitlistStatus;
     subscriber?: WaitlistSubscriber;
+    position?: number;
+    totalCount?: number;
 }
 
 /**

@@ -4,7 +4,8 @@ import { BaseApiRoute } from '../base';
 import { AuditLogger } from '@/lib/audit/logger';
 import prisma from '@/lib/database';
 import { verifyCode } from '@/lib/email/verification/code';
-import { AuditAction, AuditStatus } from '@/types/auditLogs';
+import { AuditAction, AuditStatus } from "@/types/auditLogs";
+import { parseUserAgent } from '@/lib/utils/user-agent';
 
 export type VerificationType = 'email' | 'password' | '2fa';
 
@@ -77,21 +78,58 @@ export abstract class BaseAuthRoute<TRequest = any, TResponse = any> extends Bas
         request?: NextRequest
     ) {
         try {
-            // Simply pass the request to AuditLogger - it will extract client info
+            const enhancedMetadata: Record<string, any> = {
+                email,
+                ...(metadata || {})
+            };
+            
+            // Pass the request directly to AuditLogger
             await AuditLogger.logAuth(
                 action,
                 status,
                 userId,
-                undefined, // subscriberId
-                {
-                    email,
-                    ...metadata,
-                },
+                undefined,
+                enhancedMetadata,
                 request
             );
         } catch (error) {
             console.error('Failed to log auth action:', error);
             // Don't throw to avoid disrupting the main flow
+        }
+    }
+    
+    /**
+     * Gets IP address from a request
+     * Use a different name to avoid collision with private method in BaseApiRoute
+     */
+    private getRequestIp(request: NextRequest): string {
+        try {
+            const ipHeaders = [
+                'x-vercel-forwarded-for',
+                'cf-connecting-ip',
+                'x-forwarded-for', 
+                'true-client-ip',
+                'x-real-ip'
+            ];
+            
+            for (const header of ipHeaders) {
+                const value = request.headers.get(header);
+                if (value) {
+                    const ip = header.includes('forwarded-for') 
+                        ? value.split(',')[0].trim() 
+                        : value;
+                    return ip;
+                }
+            }
+            
+            // Try edge runtime ip property
+            const edgeRequest = request as any;
+            if (edgeRequest.ip) return edgeRequest.ip;
+            
+            return 'unknown';
+        } catch (error) {
+            console.warn('Failed to extract IP from request:', error);
+            return 'unknown';
         }
     }
 

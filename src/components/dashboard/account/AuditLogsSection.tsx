@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { createApiClient } from '@/lib/api/client';
-import { AuditAction, AuditStatus } from '@/lib/audit/logger';
+import { AuditAction, AuditStatus } from '@/types/auditLogs';
 
 interface AuditLog {
     id: string;
@@ -109,4 +109,4 @@ export function AuditLogsSection({ logs: initialLogs }: AuditLogsSectionProps) {
             </div>
         </div>
     );
-} 
+}

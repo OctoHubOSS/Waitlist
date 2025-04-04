@@ -7,6 +7,7 @@ import { AuditAction, AuditStatus } from "@/types/auditLogs";
 import { sendVerificationEmail } from "@/lib/email/account";
 import { hashPassword } from '@/lib/auth/server/password';
 import { withTimeout } from '@/lib/api/utils';
+import { appUrl } from '@/utils/urlBuilder';
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -48,10 +49,7 @@ class RegisterRoute extends BaseAuthRoute<z.infer<typeof registerSchema>> {
       // Check if this email is in the waitlist
       const waitlistCheck = await this.checkWaitlistStatus(email);
       if (!waitlistCheck.isSubscriber) {
-        return errors.forbidden('You need to join the waitlist before registering', {
-          code: 'WAITLIST_REQUIRED',
-          redirectTo: '/?subscribe=true'
-        });
+        return errors.forbidden('You need to join the waitlist before registering');
       }
 
       // Hash password
@@ -76,7 +74,12 @@ class RegisterRoute extends BaseAuthRoute<z.infer<typeof registerSchema>> {
 
       // Generate verification code
       const code = this.generateVerificationCode();
-      const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?email=${encodeURIComponent(email)}&code=${code}`;
+      
+      // Use our enhanced URL builder to create the verification URL
+      const verifyUrl = appUrl(`/auth/verify-email`, { 
+        email: encodeURIComponent(email), 
+        code 
+      });
 
       // Send verification email
       await sendVerificationEmail({

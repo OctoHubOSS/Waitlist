@@ -1,6 +1,6 @@
 import { ApiService, ApiConfig, ApiResponse, ApiError, ApiValidationSchema, User, CreateUserRequest, UpdateUserRequest, LoginRequest, RegisterRequest, AuthResponse, EmailVerificationRequest, PasswordResetRequest, WelcomeEmailRequest, WaitlistResponse, SubscribeRequest, UnsubscribeRequest } from './types';
 import { createApiClient } from './client';
-import { successResponse, errorResponse } from './utils';
+import { createSuccessResponse, createErrorResponse } from './utils';
 import { z } from 'zod';
 
 /**
@@ -88,7 +88,7 @@ export class BaseApiService implements ApiService {
                         message: err.message
                     }));
                     
-                    return errorResponse('Invalid response data', {
+                    return createErrorResponse('Invalid response data', {
                         code: 'VALIDATION_ERROR',
                         details: {
                             validationErrors: formattedErrors
@@ -96,7 +96,7 @@ export class BaseApiService implements ApiService {
                     });
                 }
                 
-                return errorResponse('Invalid response data');
+                return createErrorResponse('Invalid response data');
             }
         }
 

@@ -1,10 +1,11 @@
 import { ApiResponse, ApiError } from './types';
 import { ERROR_CODES } from './constants';
+import { createAbsoluteUrl as createUrl } from '@/utils/url';
 
 /**
  * Creates a success response
  */
-export function successResponse<T>(data: T, message?: string): ApiResponse<T> {
+export function createSuccessResponse<T>(data: T, message?: string): ApiResponse<T> {
     return {
         success: true,
         data,
@@ -15,7 +16,7 @@ export function successResponse<T>(data: T, message?: string): ApiResponse<T> {
 /**
  * Creates an error response
  */
-export function errorResponse(
+export function createErrorResponse(
     errorMessage: string | ApiError, 
     details?: Partial<Omit<ApiError, 'message'>>
 ): ApiResponse<never> {
@@ -138,23 +139,7 @@ export function safeJsonParse<T>(json: string, fallback?: T): T | null {
  * Creates an absolute URL from a relative path
  */
 export function createAbsoluteUrl(path: string, baseUrl?: string): string {
-    // Use provided baseUrl or default to the environment variable
-    const base = baseUrl || process.env.NEXT_PUBLIC_APP_URL || '';
-    
-    // Ensure baseUrl has a protocol
-    const normalizedBase = base.startsWith('http') 
-        ? base 
-        : `${typeof window !== 'undefined' ? window.location.protocol : 'http'}://${base}`;
-    
-    // Normalize path to ensure it starts with / but doesn't duplicate with baseUrl
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    
-    try {
-        return new URL(normalizedPath, normalizedBase).toString();
-    } catch (error) {
-        console.error('Failed to create absolute URL:', error);
-        return normalizedBase + normalizedPath;
-    }
+    return createUrl(path, baseUrl);
 }
 
 /**

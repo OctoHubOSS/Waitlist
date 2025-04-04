@@ -4,9 +4,8 @@ import { BaseAuthRoute } from '@/lib/api/routes/auth/base';
 import { successResponse, errors } from '@/lib/api/responses';
 import { AuditAction, AuditStatus } from '@/types/auditLogs';
 import { withTimeout } from '@/lib/api/utils';
-import prisma from '@/lib/database';
-import { verifyCode } from '@/lib/email/verification/code';
 import { sendWelcomeEmail } from '@/lib/email/account';
+import prisma from '@/lib/database';
 
 // Email verification schema
 const verifyEmailSchema = z.object({
@@ -71,6 +70,7 @@ class VerifyEmailRoute extends BaseAuthRoute<z.infer<typeof verifyEmailSchema>> 
       });
 
       if (!user) {
+        // Fix: Use proper error response
         return errors.notFound('User not found');
       }
 
@@ -95,6 +95,7 @@ class VerifyEmailRoute extends BaseAuthRoute<z.infer<typeof verifyEmailSchema>> 
           request
         );
         
+        // Fix: Use proper error format
         return errors.badRequest(result.error || 'Invalid verification code');
       }
 

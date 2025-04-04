@@ -10,9 +10,10 @@ import { AuditAction, AuditStatus } from '@/types/auditLogs';
  */
 export async function GET(request: NextRequest) {
     try {
-        // Log the API info request for monitoring
+        // Pass the full request object to getClientInfo
         const client = await clientInfo.getClientInfo(request);
         
+        // Pass the request object directly to logSystem
         await AuditLogger.logSystem(
             AuditAction.SYSTEM_WARNING,
             AuditStatus.SUCCESS,
@@ -21,10 +22,10 @@ export async function GET(request: NextRequest) {
                 path: request.nextUrl.pathname,
                 clientInfo: client
             },
-            request
+            request  // Pass the full request object
         );
         
-        // Return API information
+        // Return API information with corrected endpoints
         return NextResponse.json({
             name: 'OctoHub Waitlist API',
             version: '0.2.0',
@@ -33,7 +34,6 @@ export async function GET(request: NextRequest) {
             endpoints: {
                 waitlist: {
                     subscribe: API_ENDPOINTS.waitlist.subscribe,
-                    unsubscribe: API_ENDPOINTS.waitlist.status,
                     check: API_ENDPOINTS.waitlist.status
                 },
                 auth: {
@@ -59,14 +59,15 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         console.error('Error in API info endpoint:', error);
         
-        // Log the error
+        // Log the error, passing the request object directly
         await AuditLogger.logSystem(
             AuditAction.SYSTEM_ERROR,
             AuditStatus.FAILURE,
             {
                 message: 'Error serving API info',
                 error: error instanceof Error ? error.message : String(error)
-            }
+            },
+            request  // Pass the full request object
         );
         
         // Return error response

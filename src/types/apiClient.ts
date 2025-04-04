@@ -1,24 +1,37 @@
 import { NextRequest } from 'next/server';
 
 /**
- * Extended NextRequest type that accounts for the undocumented but sometimes present properties
+ * Extended NextRequest interface for Edge Runtime features
+ * This allows us to access runtime properties that aren't in the NextRequest type
  */
 export interface ExtendedNextRequest extends NextRequest {
-    /**
-     * The client's IP address. Available in some environments like Edge runtime.
-     */
+    // Properties available in edge runtime
     ip?: string;
-    
-    /**
-     * The geo information from the request. Available in edge environments.
-     */
     geo?: {
-        city?: string;
         country?: string;
+        city?: string;
         region?: string;
         latitude?: string;
         longitude?: string;
     };
+}
+
+/**
+ * Extended client info interface with debug headers
+ */
+export interface DebugClientInfo {
+    ip: string;
+    userAgent: string;
+    browser: string;
+    os: string;
+    device: string;
+    referer?: string;
+    origin?: string;
+    language?: string;
+    timestamp: string;
+    isBot?: boolean;
+    debugHeaders?: Record<string, string>;
+    [key: string]: any;
 }
 
 /**

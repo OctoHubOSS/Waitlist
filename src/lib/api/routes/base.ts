@@ -1,10 +1,12 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { errors } from '@/lib/api/responses';
+import { createErrorResponse } from '@/lib/api/utils';
 import { AuditLogger } from '@/lib/audit/logger';
 import { withTimeout } from '@/lib/api/utils';
 import { AuditAction, AuditStatus } from "@/types/auditLogs";
 import { clientInfo } from '@/lib/client';
+import { parseUserAgent } from '@/lib/utils/user-agent';
+import { responses } from '@/lib/api/responses';
 
 /**
  * Base API route class
@@ -39,7 +41,7 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
      * Made public so it can be exported directly in route handlers
      */
     public methodNotAllowed(request: NextRequest): Response {
-        return errors.methodNotAllowed(
+        return responses.methodNotAllowed(
             `Method ${request.method} not allowed on this endpoint`,
             {
                 path: request.nextUrl.pathname,
@@ -171,23 +173,23 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
         
         // Handle validation errors
         if (error && error.type === 'validation') {
-            return errors.badRequest('Validation failed', {
+            return responses.badRequest('Validation failed', {
                 validation: error.issues
             });
         }
         
         // Handle timeout errors
         if (error instanceof Error && error.message.includes('timed out')) {
-            return errors.timeout('Request timed out');
+            return responses.timeout('Request timed out');
         }
         
         // Handle database errors
         if (error?.code?.startsWith('P')) {
-            return errors.internal('Database operation failed');
+            return responses.internal('Database operation failed');
         }
         
         // Handle other errors
-        return errors.internal(
+        return responses.internal(
             error instanceof Error ? error.message : 'An unexpected error occurred'
         );
     }
@@ -208,11 +210,6 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
     
     /**
      * Logs API errors to the audit system
-     * 
-     * @param action - The action that was being performed
-     * @param message - Error message
-     * @param details - Additional error details
-     * @param request - The original request
      */
     protected async logApiError(
         action: AuditAction,
@@ -221,20 +218,119 @@ export abstract class BaseApiRoute<TRequest = any, TResponse = any> {
         request: NextRequest
     ): Promise<void> {
         try {
+            // Capture important request data before going to the logger
+            const requestData = {
+                path: request.nextUrl.pathname,
+                method: request.method,
+                url: request.url,
+                time: new Date().toISOString(),
+                headers: this.getRequestHeadersForLogging(request)
+            };
+            
             await AuditLogger.logSystem(
                 action,
                 AuditStatus.FAILURE,
                 {
                     message,
                     ...details,
-                    path: request.nextUrl.pathname,
-                    method: request.method,
+                    request: requestData
                 },
-                request
+                request // Pass the whole request object for client info extraction
             );
         } catch (logError) {
             // Don't let logging errors disrupt the main flow
             console.error('Failed to log API error:', logError);
+        }
+    }
+    
+    /**
+     * Extract headers for logging, removing sensitive information
+     */
+    private getRequestHeadersForLogging(request: NextRequest): Record<string, string> {
+        const headers: Record<string, string> = {};
+        
+        try {
+            if (request && request.headers) {
+                // Get important headers specifically
+                const importantHeaders = [
+                    'user-agent',
+                    'referer',
+                    'origin',
+                    'x-forwarded-for',
+                    'x-real-ip',
+                    'cf-connecting-ip',
+                    'true-client-ip',
+                    'x-client-ip',
+                    'content-type',
+                    'accept',
+                    'accept-language',
+                    'x-vercel-forwarded-for'
+                ];
+                
+                // Only log specific headers to avoid sensitive data
+                for (const header of importantHeaders) {
+                    const value = request.headers.get(header);
+                    if (value) {
+                        headers[header] = value;
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('Error extracting headers for logging:', error);
+        }
+        
+        return headers;
+    }
+    
+    /**
+     * Safely extracts request IP for logging purposes
+     */
+    private extractRequestIp(request: NextRequest): string {
+        try {
+            const ipHeaders = [
+                'x-vercel-forwarded-for',
+                'cf-connecting-ip',
+                'x-forwarded-for', 
+                'true-client-ip',
+                'x-real-ip'
+            ];
+            
+            for (const header of ipHeaders) {
+                const value = request.headers.get(header);
+                if (value) {
+                    const ip = header.includes('forwarded-for') 
+                        ? value.split(',')[0].trim() 
+                        : value;
+                    return ip;
+                }
+            }
+            
+            // Try edge runtime ip property (NextRequest in edge runtime might have this)
+            const edgeRequest = request as any;
+            if (edgeRequest.ip) return edgeRequest.ip;
+            
+            return 'unknown';
+        } catch (error) {
+            console.warn('Failed to extract IP from request:', error);
+            return 'unknown';
+        }
+    }
+    
+    /**
+     * Safely extracts request headers for logging
+     */
+    private extractRequestHeaders(request: NextRequest): Record<string, string> {
+        try {
+            const headers: Record<string, string> = {};
+            request.headers.forEach((value, key) => {
+                // Avoid logging sensitive headers
+                if (!['cookie', 'authorization'].includes(key.toLowerCase())) {
+                    headers[key] = value;
+                }
+            });
+            return headers;
+        } catch (error) {
+            return { error: 'Failed to extract headers' };
         }
     }
     

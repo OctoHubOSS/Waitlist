@@ -1,5 +1,6 @@
 import { ApiClient, ApiConfig, ApiResponse, ApiError } from './types';
-import { errorResponse, successResponse, withTimeout, withRetry } from './utils';
+// Fix import references to match exported names from utils.ts
+import { createSuccessResponse, createErrorResponse, withTimeout, withRetry } from './utils';
 import { getSession } from 'next-auth/react';
 import { CONTENT_TYPES, TIMEOUTS, RETRY_SETTINGS } from './constants';
 
@@ -100,7 +101,7 @@ export class BaseApiClient implements ApiClient {
             // Validate HTTP method
             const validMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
             if (!validMethods.includes(method.toUpperCase())) {
-                return errorResponse(`Invalid HTTP method: ${method}`, {
+                return createErrorResponse(`Invalid HTTP method: ${method}`, {
                     code: 'INVALID_HTTP_METHOD',
                     statusCode: 405,
                     details: {
@@ -158,7 +159,7 @@ export class BaseApiClient implements ApiClient {
                 const isTimeoutError = error.message.includes('timed out');
                 const errorCode = isTimeoutError ? 'REQUEST_TIMEOUT' : 'REQUEST_FAILED';
                 
-                return errorResponse(error.message, {
+                return createErrorResponse(error.message, {
                     code: errorCode,
                     details: {
                         method,
@@ -168,7 +169,7 @@ export class BaseApiClient implements ApiClient {
                 });
             }
             
-            return errorResponse('Request failed with unknown error');
+            return createErrorResponse('Request failed with unknown error');
         }
     }
 
@@ -281,7 +282,7 @@ export class BaseApiClient implements ApiClient {
         
         // Special handling for no-content responses
         if (response.status === 204) {
-            return successResponse(undefined as any);
+            return createSuccessResponse(undefined as any);
         }
         
         try {
@@ -292,7 +293,7 @@ export class BaseApiClient implements ApiClient {
                 // Check for error responses
                 if (!response.ok) {
                     // API returned an error with details
-                    return errorResponse(data.error?.message || 'Request failed', {
+                    return createErrorResponse(data.error?.message || 'Request failed', {
                         code: data.error?.code || `HTTP_${response.status}`,
                         statusCode: response.status,
                         details: data.error?.details || data
@@ -308,7 +309,7 @@ export class BaseApiClient implements ApiClient {
                 }
                 
                 // Wrap raw data in success response
-                return successResponse(data);
+                return createSuccessResponse(data);
             }
             
             // Handle non-JSON responses
@@ -322,7 +323,7 @@ export class BaseApiClient implements ApiClient {
                     bodyPreview: text.substring(0, 500)
                 });
                 
-                return errorResponse(`Server returned ${response.status} ${response.statusText}`, {
+                return createErrorResponse(`Server returned ${response.status} ${response.statusText}`, {
                     code: `HTTP_${response.status}`,
                     statusCode: response.status,
                     details: {
@@ -334,13 +335,13 @@ export class BaseApiClient implements ApiClient {
             
             // For successful non-JSON responses, return text as data
             // This is useful for plaintext, HTML, or other response types
-            return successResponse({ content: text, contentType } as any);
+            return createSuccessResponse({ content: text, contentType } as any);
             
         } catch (error) {
             // Handle JSON parsing errors or other response handling issues
             console.error('Error processing response:', error);
             
-            return errorResponse('Failed to process response', {
+            return createErrorResponse('Failed to process response', {
                 code: 'RESPONSE_PROCESSING_ERROR',
                 statusCode: response.status,
                 details: {

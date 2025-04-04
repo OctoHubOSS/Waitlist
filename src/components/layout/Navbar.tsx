@@ -88,9 +88,9 @@ export default function Navbar() {
                         <Image
                             src="/logo.webp"
                             alt="OctoHub Logo"
-                            width={32}
-                            height={32}
-                            className="rounded-lg transition-transform group-hover:scale-110"
+                            width={40}
+                            height={40}
+                            className="rounded-lg transition-transform group-hover:scale-110 group-hover:rotate-6"
                         />
                         <span className="ml-2 text-xl font-bold text-white group-hover:text-github-accent transition-colors">
                             OctoHub
@@ -115,7 +115,7 @@ export default function Navbar() {
                                         onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                         className="flex items-center space-x-2 text-github-text-secondary hover:text-white transition-colors"
                                     >
-                                        <UserAvatar className="w-8 h-8" />
+                                        <UserAvatar className="w-8 h-8 border border-github-dark-secondary shadow" />
                                         <span className="text-sm font-medium">{session.user?.name}</span>
                                         <svg
                                             className={`h-4 w-4 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`}
@@ -195,9 +195,10 @@ export default function Navbar() {
                 <AnimatePresence>
                     {isMenuOpen && (
                         <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
+                            initial={{ opacity: 0, height: 0, y: -20 }}
+                            animate={{ opacity: 1, height: 'auto', y: 0 }}
+                            exit={{ opacity: 0, height: 0, y: -20 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
                             className="md:hidden py-4"
                         >
                             <div className="flex flex-col space-y-4">
@@ -261,4 +262,4 @@ export default function Navbar() {
             </div>
         </nav>
     );
-} 
+}

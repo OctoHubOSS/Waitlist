@@ -7,30 +7,43 @@ import { emailClient } from '@/lib/email/client';
 import { WaitlistStatus } from '@/lib/api/types';
 import { AuditAction, AuditStatus } from '@/types/auditLogs';
 
+interface LogWaitlistActivityParams {
+  action: AuditAction;
+  status: AuditStatus;
+  email: string;
+  details?: Record<string, any>;
+  request?: NextRequest;
+}
+
 export abstract class BaseWaitlistRoute<TRequest = any, TResponse = any> extends BaseApiRoute<TRequest, TResponse> {
     /**
      * Logs waitlist-related activity
      */
-    protected async logWaitlistActivity(
-        action: AuditAction,
-        status: AuditStatus,
-        email: string,
-        details?: Record<string, any>,
-        request?: NextRequest
-    ): Promise<void> {
+    protected async logWaitlistActivity({
+        action,
+        status,
+        email,
+        details,
+        request
+    }: LogWaitlistActivityParams): Promise<void> {
         try {
             // Find subscriber by email
             const subscriber = await prisma.waitlistSubscriber.findUnique({
-                where: { email }
+                where: { email: email }  // Make sure email is explicitly assigned
             });
 
-            // Let AuditLogger handle client info extraction
+            if (!subscriber) {
+                console.warn(`Attempted to log activity for non-existent subscriber: ${email}`);
+                return;
+            }
+
+            // Log the action
             await AuditLogger.logSystem(
                 action,
                 status,
                 {
+                    subscriberId: subscriber.id,
                     email,
-                    subscriberId: subscriber?.id,
                     ...details
                 },
                 request
@@ -39,6 +52,15 @@ export abstract class BaseWaitlistRoute<TRequest = any, TResponse = any> extends
             console.error('Failed to log waitlist activity:', error);
             // Don't throw to avoid disrupting the main flow
         }
+    }
+
+    /**
+     * Get subscriber details by email
+     */
+    protected async getSubscriberByEmail(email: string) {
+        return prisma.waitlistSubscriber.findUnique({
+            where: { email }
+        });
     }
 
     /**

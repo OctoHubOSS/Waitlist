@@ -45,4 +45,4 @@ export default async function AccountPage() {
             </AccountSection>
         </div>
     );
-} 
+}

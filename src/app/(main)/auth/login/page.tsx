@@ -138,7 +138,7 @@ export default function LoginPage() {
                 transition={{ duration: 0.5 }}
             >
                 <div className="flex flex-col items-center">
-                    <div className="relative w-16 h-16 mb-4">
+                    <div className="relative w-20 h-20 mb-4 transition-transform hover:scale-110">
                         <Image
                             src="/logo.webp"
                             alt="OctoHub Logo"
@@ -308,7 +308,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-github-accent hover:bg-github-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-github-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-github-accent hover:bg-github-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-github-accent disabled:opacity-50 disabled:cursor-not-allowed transition-shadow hover:shadow-md"
                         >
                             {isLoading ? (
                                 <div className="flex items-center">
@@ -324,4 +324,4 @@ export default function LoginPage() {
             </motion.div>
         </div>
     );
-} 
+}

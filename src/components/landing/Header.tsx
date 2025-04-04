@@ -10,7 +10,7 @@ export default function Header() {
   return (
     <div className="text-center space-y-8">
       <motion.div
-        className="relative mx-auto h-32 w-32 rounded-full bg-gradient-to-r from-github-dark to-github-dark-secondary flex items-center justify-center backdrop-blur-sm border border-github-border overflow-hidden"
+        className="relative mx-auto h-32 w-32 rounded-full  flex items-center justify-center backdrop-blur-sm border border-github-border overflow-hidden"
         whileHover={{ scale: 1.05, rotate: 360 }}
         whileTap={{ scale: 0.95 }}
         transition={{ duration: 0.8 }}
